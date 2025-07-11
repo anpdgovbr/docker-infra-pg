@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: pg-puro-dev
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - pgdata-puro:/var/lib/postgresql/data
+    networks:
+      - pg-net
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-anpd
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8085:80"
+    networks:
+      - pg-net
+
+volumes:
+  pgdata-puro:
+
+networks:
+  pg-net:
