@@ -7,10 +7,16 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata-puro:/var/lib/postgresql/data
     networks:
       - pg-net
+    ports:
+      - "5432:5432"
 
   pgadmin:
     image: dpage/pgadmin4
@@ -18,10 +24,15 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "8085:80"
     networks:
       - pg-net
+    depends_on:
+      - postgres
 
 volumes:
   pgdata-puro:
