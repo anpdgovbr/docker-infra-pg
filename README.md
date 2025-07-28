@@ -26,19 +26,24 @@ O projeto utiliza variáveis de ambiente para configurar os serviços. Para pers
    cp .env.example .env
    ```
 
-2. **Gere o script SQL de criação do banco da aplicação:**
-   Execute o script que substitui os valores no template:
+2. **Gere os arquivos de inicialização:**
+   Execute o script que gera todos os arquivos necessários com base nas variáveis definidas no `.env`:
 
    ```bash
-   bash scripts/generate-init-sql.sh
+   bash scripts/run-all.sh
    ```
 
-3. **Ajuste as variáveis:**
-   Abra o arquivo `.env` e modifique as variáveis conforme necessário. As principais são:
+   Esse script irá:
 
-   - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: credenciais do banco padrão.
-   - `BACKLOG_DB`, `BACKLOG_USER`, `BACKLOG_PASS`: credenciais do banco da aplicação a ser criado.
-   - `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD`: credenciais do pgAdmin.
+   - Gerar `init/01-create-backlog-dim.sql` com o banco da aplicação
+   - Gerar `config/servers.json` com a configuração do pgAdmin pré-carregada
+
+3. **Ajuste as variáveis:**
+   Abra o `.env` e modifique conforme necessário:
+
+   - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: superusuário e banco padrão
+   - `BACKLOG_DB`, `BACKLOG_USER`, `BACKLOG_PASS`: banco e usuário da aplicação
+   - `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD`: credenciais de acesso ao pgAdmin
 
 ---
 
@@ -71,7 +76,7 @@ docker compose down
 | Serviço    | Container           | Porta Host | Porta Interna | Volume de Dados   |
 | ---------- | ------------------- | ---------- | ------------- | ----------------- |
 | PostgreSQL | `anpd-postgres-dev` | `5432`     | `5432`        | `pgdata-anpd-dev` |
-| pgAdmin    | `anpd-pgadmin-dev`  | `8085`     | `80`          | -                 |
+| pgAdmin    | `anpd-pgadmin-dev`  | `8085`     | `80`          | `pgadmin-data`    |
 
 ---
 
@@ -79,12 +84,7 @@ docker compose down
 
 1. Acesse `http://localhost:8085`
 2. Login com `PGADMIN_DEFAULT_EMAIL` e `PGADMIN_DEFAULT_PASSWORD` definidos no `.env`
-3. Adicione um servidor PostgreSQL:
-   - Host: `postgres`
-   - Porta: `5432`
-   - Maintenance database: valor de `POSTGRES_DB`
-   - Username: `POSTGRES_USER`
-   - Password: `POSTGRES_PASSWORD`
+3. O servidor `anpd-postgres-dev` já estará visível automaticamente se o `servers.json` for gerado corretamente.
 
 ---
 
