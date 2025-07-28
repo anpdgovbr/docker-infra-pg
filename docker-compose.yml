@@ -27,6 +27,9 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./config/servers.json:/pgadmin4/servers.json
     ports:
       - '8085:80'
     networks:
@@ -36,6 +39,7 @@ services:
 
 volumes:
   pgdata-anpd-dev:
+  pgadmin-data:
 
 networks:
   pg-net:
