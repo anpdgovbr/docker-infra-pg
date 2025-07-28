@@ -6,9 +6,8 @@
 # 🔒 Arquivos SQL gerados automaticamente (com dados sensíveis ou de ambiente)
 init/*.sql
 !init/README.md
+config/servers.json
 
-# 🐘 Volumes de dados do Postgres
-pgdata-puro/
 
 # ⚙️ Configurações de sistema / IDEs
 .DS_Store
