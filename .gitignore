@@ -1,1 +1,22 @@
+# 🔒 Arquivos de ambiente (somente exemplos devem ser versionados)
 .env
+.env.*
+!.env.example
+
+# 🔒 Arquivos SQL gerados automaticamente (com dados sensíveis ou de ambiente)
+init/*.sql
+!init/README.md
+
+# 🐘 Volumes de dados do Postgres
+pgdata-puro/
+
+# ⚙️ Configurações de sistema / IDEs
+.DS_Store
+*.log
+*.swp
+.vscode/
+.idea/
+
+# 🔧 Outros arquivos temporários
+*.bak
+*.tmp

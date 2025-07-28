@@ -1,0 +1,4 @@
+-- Banco e usuário da aplicação backlog-dim (gerado)
+CREATE DATABASE {{APP_DB}};
+CREATE USER {{APP_USER}} WITH ENCRYPTED PASSWORD '{{APP_PASS}}';
+GRANT ALL PRIVILEGES ON DATABASE {{APP_DB}} TO {{APP_USER}};
