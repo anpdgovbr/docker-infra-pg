@@ -19,8 +19,6 @@ services:
     image: dpage/pgadmin4
     container_name: anpd-pgadmin-dev
     restart: always
-    env_file:
-      - .env
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
