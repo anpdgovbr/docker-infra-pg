@@ -2,7 +2,6 @@
 .env
 .env.*
 !.env.example
-!.env.portainer.example
 
 # 🔒 Arquivos SQL gerados automaticamente (com dados sensíveis ou de ambiente)
 init/*.sql
