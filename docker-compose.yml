@@ -33,17 +33,13 @@ services:
       - postgres
 
   init-runner:
-    image: debian:bookworm-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.init-runner
     container_name: run-init-scripts
-    working_dir: /app
-    entrypoint: ['/bin/bash', '-c']
-    command: 'ls -la /app/scripts && echo "---" && cat /app/scripts/run-all.sh || echo "⚠️  Arquivo não encontrado"'
     volumes:
-      - ./scripts:/app/scripts
-      - ./templates:/app/templates
       - ./init:/app/init
       - ./config:/app/config
-      - ./.env:/app/.env
     depends_on:
       - postgres
     restart: 'no'
