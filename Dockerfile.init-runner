@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y bash coreutils
 # Copia os arquivos necessários
 COPY scripts/ scripts/
 COPY templates/ templates/
-COPY .env .env
+
 
 # Garante que os scripts são executáveis
 RUN chmod +x scripts/*.sh
