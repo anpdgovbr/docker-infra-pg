@@ -33,7 +33,7 @@ services:
       - postgres
 
   init-runner:
-    image: bash:5
+    image: debian:bookworm-slim
     container_name: run-init-scripts
     working_dir: /app
     entrypoint: ['/bin/bash', '/app/scripts/run-all.sh']
