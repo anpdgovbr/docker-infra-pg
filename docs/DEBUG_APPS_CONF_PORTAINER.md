@@ -3,6 +3,7 @@
 ## ✅ **Verificações Realizadas**
 
 ### 1️⃣ **Git Status:**
+
 ```bash
 # ✅ apps.conf está commitado e versionado:
 git ls-files config/ → config/apps.conf
@@ -15,6 +16,7 @@ git log config/apps.conf → c2f0e38 feat: Implementação...
 ```
 
 ### 2️⃣ **Arquivos Locais:**
+
 ```bash
 # ✅ Arquivo existe localmente:
 dir config/
@@ -23,6 +25,7 @@ servers.json  240 bytes    29/07/2025 16:45
 ```
 
 ### 3️⃣ **Gitignore Limpo:**
+
 ```bash
 # ✅ Removida referência órfã:
 - !.env.portainer.example  # ❌ Arquivo inexistente
@@ -37,8 +40,9 @@ servers.json  240 bytes    29/07/2025 16:45
 ### **Portainer não está baixando versão atual do repositório**
 
 **Possíveis causas:**
+
 1. **Cache do Git no Portainer**
-2. **Auto-update desabilitado** 
+2. **Auto-update desabilitado**
 3. **Branch incorreta** (não está em main)
 4. **Permissões de acesso** ao repositório
 5. **Webhook não configurado**
@@ -46,6 +50,7 @@ servers.json  240 bytes    29/07/2025 16:45
 ## 🔧 **SOLUÇÕES PARA PORTAINER**
 
 ### **Opção 1: Forçar Pull Manual**
+
 ```bash
 # No Portainer Stack:
 1. Settings → GitOps
@@ -54,6 +59,7 @@ servers.json  240 bytes    29/07/2025 16:45
 ```
 
 ### **Opção 2: Commit Vazio (Trigger)**
+
 ```bash
 # Força o Portainer a detectar mudança:
 git commit --allow-empty -m "trigger: force Portainer update for apps.conf"
@@ -61,6 +67,7 @@ git push origin main
 ```
 
 ### **Opção 3: Verificar Configuração GitOps**
+
 ```bash
 # No Portainer Stack Settings:
 ✅ Repository URL: https://github.com/anpdgovbr/docker-infra-pg
@@ -71,6 +78,7 @@ git push origin main
 ```
 
 ### **Opção 4: Recrear Stack**
+
 ```bash
 # Em caso extremo:
 1. Remove Stack atual
@@ -82,6 +90,7 @@ git push origin main
 ## 🎯 **WORKAROUND TEMPORÁRIO**
 
 ### **Se nada funcionar, adicione volume explícito:**
+
 ```yaml
 # No docker-compose.yml (temporário):
 services:
@@ -89,10 +98,11 @@ services:
     volumes:
       - ./init:/app/init
       - ./config:/app/config
-      - ./config/apps.conf:/app/config/apps.conf:ro  # ✅ Força cópia
+      - ./config/apps.conf:/app/config/apps.conf:ro # ✅ Força cópia
 ```
 
 ### **Ou use modo local temporariamente:**
+
 ```bash
 # Environment Variables no Portainer:
 GITOPS_MODE=false
@@ -102,6 +112,7 @@ APPS_CONFIG=backlog:backlog_dim_dev:backlog_user_db:SENHA1,controladores:control
 ## 🔍 **VALIDAÇÃO**
 
 ### **Para confirmar se resolveu:**
+
 ```bash
 # Logs esperados do init-runner:
 📁 [generate-gitops-sql.sh] Conteúdo de config/:

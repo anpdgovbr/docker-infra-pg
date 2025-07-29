@@ -54,10 +54,13 @@ generate_app_sql() {
   
   echo "🔧 [generate-gitops-sql.sh] Gerando SQL para $app_name"
   
+  # Escapar caracteres especiais nas senhas para uso no sed
+  app_pass_escaped=$(printf '%s\n' "$app_pass" | sed 's/[[\.*^$()+?{|]/\\&/g')
+  
   cat templates/create-app-db.sql.tpl \
     | sed "s/{{APP_DB}}/$app_db/" \
     | sed "s/{{APP_USER}}/$app_user/" \
-    | sed "s/{{APP_PASS}}/$app_pass/" \
+    | sed "s/{{APP_PASS}}/$app_pass_escaped/" \
     | sed "s/{{APP_NAME}}/$app_name/" \
     > "$target_file"
   

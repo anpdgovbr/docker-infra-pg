@@ -40,11 +40,17 @@ generate_app_sql() {
   
   echo "🔧 [generate-multi-app-sql.sh] Gerando SQL para $app_name ($app_db)"
   
+  # Escapa caracteres especiais para sed
+  app_db_escaped=$(printf '%s\n' "$app_db" | sed 's/[[\.*^$()+?{|]/\\&/g')
+  app_user_escaped=$(printf '%s\n' "$app_user" | sed 's/[[\.*^$()+?{|]/\\&/g')
+  app_pass_escaped=$(printf '%s\n' "$app_pass" | sed 's/[[\.*^$()+?{|]/\\&/g')
+  app_name_escaped=$(printf '%s\n' "$app_name" | sed 's/[[\.*^$()+?{|]/\\&/g')
+  
   cat templates/create-app-db.sql.tpl \
-    | sed "s/{{APP_DB}}/$app_db/" \
-    | sed "s/{{APP_USER}}/$app_user/" \
-    | sed "s/{{APP_PASS}}/$app_pass/" \
-    | sed "s/{{APP_NAME}}/$app_name/" \
+    | sed "s/{{APP_DB}}/$app_db_escaped/" \
+    | sed "s/{{APP_USER}}/$app_user_escaped/" \
+    | sed "s/{{APP_PASS}}/$app_pass_escaped/" \
+    | sed "s/{{APP_NAME}}/$app_name_escaped/" \
     > "$target_file"
   
   echo "✅ [generate-multi-app-sql.sh] $target_file gerado"
