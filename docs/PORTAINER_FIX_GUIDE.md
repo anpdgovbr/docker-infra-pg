@@ -110,13 +110,17 @@ docker-compose.yml
 
 ## 🔄 **PRÓXIMOS PASSOS**
 
-1. **Commit as correções**: `git add . && git commit -m "fix: corrige health check e detecção GitOps + fallback apps.conf"`
+1. **Commit as correções**: `git add . && git commit -m "fix: corrige health check PostgreSQL + detecção GitOps + fallback apps.conf"`
 2. **Push**: `git push`
-3. **Forçar rebuild no Portainer**: Stack → Settings → Build → ☑️ Re-pull image + ☑️ Rebuild → Update
+3. **Update no Portainer**: Stack → Update (correção de health check não precisa rebuild)
 4. **Configurar variáveis**: Adicionar `GITOPS_MODE=true` nas environment variables
 5. **Verificar logs**: Confirmar modo GitOps detectado
 
-### 🚨 **Se apps.conf não for encontrado:**
+### 🚨 **Problemas Conhecidos e Soluções:**
+
+- **Health check falhando**: Ver `HEALTHCHECK_FIX.md` para correção detalhada
+- **apps.conf não encontrado**: Ver `TROUBLESHOOTING_APPS_CONF.md` para debug
+- **Fallbacks automáticos**: Sistema cria arquivos ausentes automaticamente
 
 - O script agora cria automaticamente um fallback
 - Ver `TROUBLESHOOTING_APPS_CONF.md` para debug detalhado
