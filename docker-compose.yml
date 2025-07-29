@@ -61,8 +61,7 @@ services:
     networks:
       - postgres_network
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     healthcheck:
       test:
         [
@@ -109,8 +108,7 @@ services:
       - ./init:/app/init
       - ./config:/app/config
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     restart: 'no'
     networks:
       - postgres_network
