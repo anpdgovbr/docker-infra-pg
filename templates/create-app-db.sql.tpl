@@ -12,6 +12,10 @@ BEGIN
 END
 $$;
 
+-- Garante que o usuário pode criar bancos (requerido pelo Prisma migrate dev)
+ALTER ROLE {{APP_USER}} CREATEDB;
+
+
 -- Garantir privilégios no banco
 GRANT ALL PRIVILEGES ON DATABASE {{APP_DB}} TO {{APP_USER}};
 
