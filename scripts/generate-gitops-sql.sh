@@ -4,6 +4,9 @@
 
 echo "🚀 [generate-gitops-sql.sh] Gerando SQLs para GitOps/Portainer..."
 
+# Verificar se flag de auto-sync está ativa
+AUTO_SYNC_ENABLED="${AUTO_SYNC_DATABASES:-false}"
+
 # Debug: mostra conteúdo do diretório config
 echo "📁 [generate-gitops-sql.sh] Conteúdo de config/:"
 ls -la config/ || echo "❌ Diretório config/ não encontrado"
@@ -103,6 +106,30 @@ echo "   SQLs com problemas: $((total_apps - successful_apps))"
 
 if [[ $successful_apps -eq $total_apps ]]; then
   echo "✅ [generate-gitops-sql.sh] Todos os SQLs gerados com sucesso!"
+  
+  # Auto-sync: tentar executar bancos automaticamente se habilitado
+  if [[ "$AUTO_SYNC_ENABLED" == "true" ]]; then
+    echo ""
+    echo "🔄 [generate-gitops-sql.sh] AUTO_SYNC_DATABASES ativo - executando sincronização..."
+    
+    # Verificar se estamos em um ambiente onde podemos conectar ao PostgreSQL
+    if command -v psql &> /dev/null && [[ -n "$POSTGRES_PASSWORD" ]]; then
+      # Dar tempo para PostgreSQL inicializar (se necessário)
+      sleep 5
+      
+      # Executar auto-sync
+      if bash "$(dirname "$0")/auto-sync-databases.sh"; then
+        echo "✅ [generate-gitops-sql.sh] Auto-sync executado com sucesso!"
+      else
+        echo "⚠️  [generate-gitops-sql.sh] Auto-sync falhou - execute manualmente:"
+        echo "    bash /app/scripts/auto-sync-databases.sh"
+      fi
+    else
+      echo "ℹ️  [generate-gitops-sql.sh] Auto-sync detectado mas PostgreSQL não disponível"
+      echo "    Execute manualmente: bash /app/scripts/auto-sync-databases.sh"
+    fi
+  fi
+  
   exit 0
 else
   echo "⚠️  [generate-gitops-sql.sh] Algumas aplicações tiveram problemas"

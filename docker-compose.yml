@@ -91,6 +91,9 @@ services:
       # Forçar modo GitOps (defina GITOPS_MODE=true no Portainer)
       GITOPS_MODE: ${GITOPS_MODE:-false}
 
+      # Auto-sync de bancos (defina AUTO_SYNC_DATABASES=true no Portainer)
+      AUTO_SYNC_DATABASES: ${AUTO_SYNC_DATABASES:-false}
+
       # Para modo LOCAL (APPS_CONFIG com credenciais completas)
       APPS_CONFIG: ${APPS_CONFIG:-}
 
@@ -98,9 +101,10 @@ services:
       BACKLOG_PASSWORD: ${BACKLOG_PASSWORD:-}
       CONTROLADORES_PASSWORD: ${CONTROLADORES_PASSWORD:-}
 
-      # Configurações do PostgreSQL
+      # Configurações do PostgreSQL (para auto-sync)
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
       POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
 
       # Variáveis legadas (para compatibilidade - serão removidas)
       BACKLOG_DB: ${BACKLOG_DB:-}
