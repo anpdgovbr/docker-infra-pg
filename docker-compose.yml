@@ -32,6 +32,21 @@ services:
     depends_on:
       - postgres
 
+  init-runner:
+    image: bash:5
+    container_name: run-init-scripts
+    working_dir: /app
+    entrypoint: ['/bin/bash', '/app/scripts/run-all.sh']
+    volumes:
+      - ./scripts:/app/scripts
+      - ./templates:/app/templates
+      - ./init:/app/init
+      - ./config:/app/config
+      - ./.env:/app/.env
+    depends_on:
+      - postgres
+    restart: 'no'
+
 volumes:
   pgdata-anpd-dev:
   pgadmin-data:
