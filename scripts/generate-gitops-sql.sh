@@ -112,20 +112,30 @@ if [[ $successful_apps -eq $total_apps ]]; then
     echo ""
     echo "🔄 [generate-gitops-sql.sh] AUTO_SYNC_DATABASES ativo - executando sincronização..."
     
-    # Verificar se estamos em um ambiente onde podemos conectar ao PostgreSQL
-    if command -v psql &> /dev/null && [[ -n "$POSTGRES_PASSWORD" ]]; then
-      # Dar tempo para PostgreSQL inicializar (se necessário)
+    # Aguardar PostgreSQL ficar disponível
+    echo "⏳ [generate-gitops-sql.sh] Aguardando PostgreSQL ficar disponível..."
+    for i in {1..30}; do
+      if command -v psql &> /dev/null && [[ -n "$POSTGRES_PASSWORD" ]]; then
+        if PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1;" &> /dev/null; then
+          echo "✅ [generate-gitops-sql.sh] PostgreSQL disponível!"
+          break
+        fi
+      fi
+      echo "   Tentativa $i/30 - aguardando 5s..."
       sleep 5
-      
-      # Executar auto-sync
+    done
+    
+    # Executar auto-sync
+    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1;" &> /dev/null; then
+      # PostgreSQL disponível, executar auto-sync
+      export POSTGRES_PASSWORD POSTGRES_USER POSTGRES_DB
       if bash "$(dirname "$0")/auto-sync-databases.sh"; then
         echo "✅ [generate-gitops-sql.sh] Auto-sync executado com sucesso!"
       else
-        echo "⚠️  [generate-gitops-sql.sh] Auto-sync falhou - execute manualmente:"
-        echo "    bash /app/scripts/auto-sync-databases.sh"
+        echo "⚠️  [generate-gitops-sql.sh] Auto-sync falhou - verifique logs"
       fi
     else
-      echo "ℹ️  [generate-gitops-sql.sh] Auto-sync detectado mas PostgreSQL não disponível"
+      echo "❌ [generate-gitops-sql.sh] PostgreSQL não disponível após 30 tentativas"
       echo "    Execute manualmente: bash /app/scripts/auto-sync-databases.sh"
     fi
   fi

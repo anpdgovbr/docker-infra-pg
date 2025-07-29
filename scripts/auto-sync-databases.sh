@@ -37,8 +37,19 @@ if [[ ! -f "/app/config/apps.conf" ]]; then
     exit 1
 fi
 
+# Detectar hostname do PostgreSQL (container vs localhost)
+POSTGRES_HOST="localhost"
+if [[ -n "$POSTGRES_SERVICE_NAME" ]]; then
+    POSTGRES_HOST="$POSTGRES_SERVICE_NAME"
+elif ping -c 1 postgres &> /dev/null; then
+    POSTGRES_HOST="postgres"
+fi
+
+echo "🔗 Usando PostgreSQL host: $POSTGRES_HOST"
+echo
+
 echo "📋 Estado inicial dos bancos:"
-PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT datname FROM pg_database WHERE datname NOT IN ('template0', 'template1', 'postgres') ORDER BY datname;"
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT datname FROM pg_database WHERE datname NOT IN ('template0', 'template1', 'postgres') ORDER BY datname;"
 echo
 
 # Arrays para estatísticas
@@ -50,13 +61,13 @@ declare -a apps_failed=()
 # Função para verificar se banco existe
 database_exists() {
     local db_name="$1"
-    PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_database WHERE datname='$db_name';" | grep -q 1
+    PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_database WHERE datname='$db_name';" | grep -q 1
 }
 
 # Função para verificar se usuário existe
 user_exists() {
     local user_name="$1"
-    PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_roles WHERE rolname='$user_name';" | grep -q 1
+    PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_roles WHERE rolname='$user_name';" | grep -q 1
 }
 
 # Função para criar banco e usuário
@@ -97,12 +108,12 @@ GRANT ALL PRIVILEGES ON DATABASE $app_db TO $app_user;
 EOF
     
     # Executar SQL
-    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$temp_sql" 2>/dev/null; then
+    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$temp_sql" 2>/dev/null; then
         rm -f "$temp_sql"
         return 0
     else
         echo "❌ Erro ao executar SQL. Tentando com output detalhado:"
-        PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$temp_sql"
+        PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$temp_sql"
         rm -f "$temp_sql"
         return 1
     fi
@@ -184,7 +195,7 @@ fi
 
 # Estado final
 echo "📋 Estado final dos bancos:"
-PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT datname FROM pg_database WHERE datname NOT IN ('template0', 'template1', 'postgres') ORDER BY datname;"
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT datname FROM pg_database WHERE datname NOT IN ('template0', 'template1', 'postgres') ORDER BY datname;"
 echo
 
 # Código de saída
