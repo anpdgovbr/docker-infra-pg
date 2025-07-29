@@ -4,10 +4,27 @@
 
 echo "🚀 [generate-gitops-sql.sh] Gerando SQLs para GitOps/Portainer..."
 
+# Debug: mostra conteúdo do diretório config
+echo "📁 [generate-gitops-sql.sh] Conteúdo de config/:"
+ls -la config/ || echo "❌ Diretório config/ não encontrado"
+
 # Verifica se apps.conf existe
 if [[ ! -f "config/apps.conf" ]]; then
   echo "❌ [generate-gitops-sql.sh] Arquivo config/apps.conf não encontrado"
-  exit 1
+  echo "🔍 [generate-gitops-sql.sh] Listando arquivos disponíveis:"
+  find . -name "*.conf" -o -name "apps.conf" 2>/dev/null || echo "Nenhum arquivo .conf encontrado"
+  
+  # Fallback: criar apps.conf básico se necessário
+  echo "🔄 [generate-gitops-sql.sh] Criando apps.conf básico como fallback..."
+  mkdir -p config
+  cat > config/apps.conf << 'EOF'
+# Aplicação: Sistema de Backlog de Demandas ANPD
+backlog:backlog_dim_dev:backlog_user_db
+
+# Aplicação: API de Controladores LGPD
+controladores:controladores_api_dev:controladores_user
+EOF
+  echo "✅ [generate-gitops-sql.sh] apps.conf criado com aplicações padrão"
 fi
 
 mkdir -p init

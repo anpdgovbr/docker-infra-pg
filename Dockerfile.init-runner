@@ -10,6 +10,15 @@ COPY scripts/ scripts/
 COPY templates/ templates/
 COPY config/ config/
 
+# Garante que apps.conf existe (debug)
+RUN ls -la config/ && \
+    if [[ ! -f "config/apps.conf" ]]; then \
+      echo "❌ apps.conf não encontrado no build!"; \
+      exit 1; \
+    else \
+      echo "✅ apps.conf encontrado no build"; \
+    fi
+
 # Garante permissões
 RUN chmod +x scripts/*.sh
 
