@@ -8,6 +8,8 @@ init/*.sql
 !init/README.md
 config/servers.json
 
+# 📝 Arquivos de troubleshooting podem ser mantidos versionados
+# TROUBLESHOOTING-*.md
 
 # ⚙️ Configurações de sistema / IDEs
 .DS_Store
