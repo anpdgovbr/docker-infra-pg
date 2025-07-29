@@ -40,6 +40,12 @@ services:
     volumes:
       - ./init:/app/init
       - ./config:/app/config
+    environment:
+      - BACKLOG_DB
+      - BACKLOG_USER
+      - BACKLOG_PASS
+      - POSTGRES_DB
+      - POSTGRES_USER
     depends_on:
       - postgres
     restart: 'no'
