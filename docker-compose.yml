@@ -25,7 +25,7 @@ services:
     volumes:
       - pgadmin-data:/var/lib/pgadmin
       - ./config/servers.json:/pgadmin4/servers.json:ro
-      - ./scripts/pgadmin-init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+      - ./pgadmin-init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     ports:
       - '8085:80'
     networks:
