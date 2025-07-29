@@ -40,6 +40,13 @@ PGADMIN_DEFAULT_PASSWORD=senha_pgadmin_segura
 - Scripts de geração com escape de caracteres especiais
 - SQLs regenerados e validados
 
+**Problema crítico encontrado:** Comando `\connect` nos SQLs
+
+**Status:** ✅ CORRIGIDO
+- ❌ Comando `\connect` não funciona em `/docker-entrypoint-initdb.d/`
+- ✅ Removido `\connect` e permissões complexas dos templates
+- ✅ SQLs simplificados para evitar travamentos na inicialização
+
 ### 4. 🐳 Problemas no Container
 **Passos para diagnóstico no Portainer:**
 
