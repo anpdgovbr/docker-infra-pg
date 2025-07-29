@@ -15,10 +15,14 @@ RUN chmod +x scripts/*.sh
 
 # Script que detecta o modo de operação
 CMD echo '🚀 [Dockerfile] Container iniciado. Detectando modo de operação...' && \
-    if [[ -f "config/apps.conf" ]]; then \
-      echo '📋 [Dockerfile] Modo GitOps detectado - usando apps.conf' && \
+    if [[ "$GITOPS_MODE" == "true" ]] || [[ -f "config/apps.conf" && -n "$BACKLOG_PASSWORD" ]]; then \
+      echo '📋 [Dockerfile] Modo GitOps detectado - usando apps.conf + environment variables' && \
+      ls -la config/ && \
       bash scripts/generate-gitops-sql.sh && \
       bash scripts/generate-servers-json.sh; \
+    elif [[ -f "config/apps.conf" ]]; then \
+      echo '📋 [Dockerfile] apps.conf encontrado mas senhas não configuradas - usando modo local' && \
+      bash scripts/generate-local-sql.sh; \
     else \
       echo '🔧 [Dockerfile] Modo local detectado - usando generate-local-sql.sh' && \
       bash scripts/generate-local-sql.sh; \

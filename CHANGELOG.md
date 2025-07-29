@@ -1,5 +1,55 @@
 # 🔄 Changelog - ANPD Docker PostgreSQL
 
+## v2.1.0 - Correções GitOps/Portainer (2025-07-29)
+
+### 🚨 **Correções Críticas**
+
+#### ✅ **Health Check PostgreSQL Corrigido**
+
+- **Problema**: Health check tentando conectar no banco "admin" (inexistente)
+- **Solução**: Agora usa `pg_isready -U admin -d postgres` (banco correto)
+- **Impacto**: Remove erros `FATAL: database "admin" does not exist`
+
+#### ✅ **Detecção de Modo GitOps Melhorada**
+
+- **Problema**: Portainer executava em modo local mesmo com `config/apps.conf`
+- **Solução**: Nova lógica `GITOPS_MODE=true` + detecção de senhas individuais
+- **Impacto**: Portainer agora executa corretamente `generate-gitops-sql.sh`
+
+#### ✅ **Docker-Compose Unificado e Híbrido**
+
+- **Removido**: `docker-compose.gitops.yml` (duplicado)
+- **Unificado**: Um único `docker-compose.yml` para ambos os modos
+- **Benefício**: 50% menos manutenção, zero dessincronização
+
+### 🔧 **Melhorias de Configuração**
+
+#### ✅ **Environment Variables Organizadas**
+
+- **Adicionado**: `GITOPS_MODE` para forçar modo GitOps
+- **Estrutura**: Seções claras (PostgreSQL, pgAdmin, Aplicações)
+- **Defaults**: Valores padrão inteligentes para todas as variáveis
+
+#### ✅ **Scripts Renomeados e Otimizados**
+
+- **Renomeado**: `run-all.sh` → `generate-local-sql.sh` (mais específico)
+- **Otimizado**: Executa apenas scripts essenciais (não utilitários)
+- **Segurança**: Não quebra ambiente mesmo com falhas individuais
+
+### 📝 **Atualizações de Template**
+
+- **`.env.example`**: Template unificado para ambos os modos
+- **`.env`**: Limpo e atualizado com valores padrão
+- **`config/apps.conf`**: Aplicações reais (backlog, controladores)
+
+### 📚 **Documentação Expandida**
+
+- **`PORTAINER_FIX_GUIDE.md`**: Guia de correção completo
+- **`ADD_NEW_APP_GUIDE.md`**: Tutorial passo-a-passo
+- **`DOCKER_COMPOSE_UNIFIED.md`**: Explicação da unificação
+
+---
+
 ## v2.0.0 - Formato Padronizado Multi-Database (2025-07-29)
 
 ### 🚀 **Principais Mudanças**
