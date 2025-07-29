@@ -1,13 +1,18 @@
 #!/bin/bash
-# Executa todos os scripts .sh dentro da pasta scripts/, exceto ele mesmo
+# Executa todos os scripts .sh dentro da pasta scripts/, exceto ele mesmo, com logging robusto
 
-echo "🚀 Executando todos os scripts em scripts/"
+echo "🚀 [run-all.sh] Iniciando execução dos scripts em scripts/"
 
 for script in ./scripts/*.sh; do
   if [[ "$script" != *"run-all.sh" ]]; then
-    echo "🔧 Rodando $script"
+    echo "🔧 [run-all.sh] Executando $script"
     bash "$script"
+    status=$?
+    if [[ $status -ne 0 ]]; then
+      echo "❌ [run-all.sh] Falha na execução de $script (exit code $status)"
+      exit $status
+    fi
   fi
 done
 
-echo "✅ Todos os scripts executados com sucesso."
+echo "✅ [run-all.sh] Todos os scripts executados com sucesso."

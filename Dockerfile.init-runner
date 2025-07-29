@@ -1,19 +1,19 @@
-# Dockerfile.init-runner
-
 FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Instala ferramentas mínimas
-RUN apt-get update && apt-get install -y bash coreutils
+# Instala ferramentas essenciais
+RUN apt-get update && apt-get install -y bash coreutils --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copia os arquivos necessários
 COPY scripts/ scripts/
 COPY templates/ templates/
 
-
-# Garante que os scripts são executáveis
+# Garante permissões
 RUN chmod +x scripts/*.sh
 
-# Executa o script principal
-ENTRYPOINT ["bash", "scripts/run-all.sh"]
+# Executa script principal com logs visuais
+CMD echo '🚀 [Dockerfile] Container iniciado. Executando scripts de inicialização...' && \
+    bash scripts/run-all.sh && \
+    echo '✅ [Dockerfile] Execução de scripts concluída com sucesso.'
