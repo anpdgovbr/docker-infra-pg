@@ -276,6 +276,14 @@ docker compose up -d
 
 ### ❌ Problemas Comuns
 
+**🚨 Container PostgreSQL unhealthy:**
+
+```bash
+# Erro: "dependency failed to start: container anpd-postgres-dev is unhealthy"
+# Solução: Verificar variáveis de ambiente obrigatórias
+# Ver: TROUBLESHOOTING-HEALTH.md para solução completa
+```
+
 **Porta em uso:**
 
 ```bash
@@ -308,6 +316,13 @@ docker network inspect docker-infra-pg_pg-net
 ```
 
 ### 🔍 Debug Avançado
+
+**Diagnóstico de saúde do PostgreSQL:**
+
+```bash
+# Novo script de diagnóstico completo
+docker exec -it anpd-postgres-dev bash /app/scripts/postgres-health-check.sh
+```
 
 **Conectar diretamente ao PostgreSQL:**
 

@@ -25,6 +25,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
       POSTGRES_TIMEZONE: ${POSTGRES_TIMEZONE:-America/Sao_Paulo}
 
+      # Configurações adicionais para estabilidade
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:---auth-host=scram-sha-256 --auth-local=trust}
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-scram-sha-256}
+
       # Senhas das aplicações (para GitOps - ignoradas no modo local)
       BACKLOG_PASSWORD: ${BACKLOG_PASSWORD:-}
       CONTROLADORES_PASSWORD: ${CONTROLADORES_PASSWORD:-}
@@ -38,15 +42,11 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'pg_isready -h localhost -p 5432 -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-postgres}'
-        ]
-      interval: 10s
-      timeout: 5s
+      test: ['CMD-SHELL', 'pg_isready -h localhost -p 5432 || exit 1']
+      interval: 15s
+      timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   pgadmin:
     image: dpage/pgadmin4:latest

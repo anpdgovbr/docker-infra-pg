@@ -2,57 +2,131 @@
 
 ## ❌ Erro Reportado
 
-````
-Failed to deploy a stack: compose u### 6. 🎯 Solução Rápida Recomendada
+```
+Failed to deploy a stack: compose up operation failed: dependency failed to start: container anpd-postgres-dev is unhealthy
+```
 
-**🚀 SOLUÇÃO RÁPIDA PARA BANCOS FALTANDO:**
+## ✅ CORREÇÕES APLICADAS (v2.0)
 
-Se apenas alguns bancos não foram criados devido ao volume existente:
+### 🏥 Health Check Melhorado
+
+**Antes (problemático):**
+
+```yaml
+healthcheck:
+  test:
+    [
+      'CMD-SHELL',
+      'pg_isready -h localhost -p 5432 -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-postgres}'
+    ]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+```
+
+**Depois (robusto):**
+
+```yaml
+healthcheck:
+  test: ['CMD-SHELL', 'pg_isready -h localhost -p 5432 || exit 1']
+  interval: 15s
+  timeout: 10s
+  retries: 5
+  start_period: 60s
+```
+
+### 🔧 Configurações Adicionais PostgreSQL
+
+```yaml
+environment:
+  POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256 --auth-local=trust'
+  POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
+```
+
+### 🛠️ Script de Diagnóstico
+
+Novo script para diagnóstico avançado:
 
 ```bash
-# 1. Entre no console do container postgres no Portainer
-# 2. Execute:
-bash /app/scripts/run-sql-files.sh
+bash /app/scripts/postgres-health-check.sh
+```
 
-# OU execute individualmente:
-PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/10-create-backlog-db.sql
-PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/11-create-controladores-db.sql
-````
+## � SOLUÇÃO IMEDIATA PARA SEU PROBLEMA
 
-**Health Check Temporário:**
-Se o health check ainda falha, comente temporariamente:eration failed: dependency failed to start: container anpd-postgres-dev is unhealthy
+### Passo 1: Verificar/Corrigir Variáveis de Ambiente
 
-````
+No **Portainer Stack Environment Variables**, certifique-se que tem:
 
-## 🔍 Possíveis Causas e Soluções
+```bash
+POSTGRES_PASSWORD=sua_senha_super_segura_aqui
+```
+
+**🚨 IMPORTANTE:** Esta variável não pode estar vazia ou ausente!
+
+### Passo 2: Parar Stack Completamente
+
+1. No Portainer: **Stop Stack**
+2. Aguardar todos containers pararem
+
+### Passo 3: Redeploy com Configurações Atualizadas
+
+1. **Deploy Stack** novamente
+2. Aguardar 60 segundos para inicialização completa
+3. Verificar logs do container `anpd-postgres-dev`
+
+### Passo 4: Diagnóstico (se ainda falhar)
+
+```bash
+# No console do container postgres (se conseguir acessar):
+bash /app/scripts/postgres-health-check.sh
+
+# OU verificar logs:
+# No Portainer: Containers > anpd-postgres-dev > Logs
+```
+
+## �🔍 Possíveis Causas e Soluções
 
 ### 1. 🕐 Timeout de Inicialização
 
-**Problema:** PostgreSQL pode estar demorando mais que 30s para inicializar completamente
+**Problema:** PostgreSQL pode estar demorando mais que 60s para inicializar completamente
 
 **Solução aplicada:**
 
-- ✅ Aumentado `start_period` para 30s
-- ✅ Reduzido `interval` para 10s para checks mais frequentes
-- ✅ Health check melhorado para incluir usuário específico
+- ✅ Aumentado `start_period` para 60s
+- ✅ Aumentado `timeout` para 10s
+- ✅ Health check simplificado (sem dependência de variáveis)
 
 ### 2. 🔐 Variáveis de Ambiente Obrigatórias
 
 **Verifique se no Portainer Stack estão definidas:**
 
 ```bash
-# OBRIGATÓRIAS
+# OBRIGATÓRIAS - SEM ESTAS O CONTAINER FALHA
 POSTGRES_USER=admin
-POSTGRES_PASSWORD=SUA_SENHA_SEGURA
+POSTGRES_PASSWORD=SUA_SENHA_SEGURA_AQUI
 POSTGRES_DB=postgres
+
+# PARA AUTO-SYNC (NOVA FUNCIONALIDADE)
+AUTO_SYNC_DATABASES=true
 
 # PARA GITOPS (se usando apps do config/apps.conf)
 BACKLOG_PASSWORD=senha_backlog_segura
 CONTROLADORES_PASSWORD=senha_controladores_segura
 
-# OPCIONAIS (mas recomendadas)
+# EMAILS PGADMIN
 PGADMIN_DEFAULT_EMAIL=admin@anpd.gov.br
 PGADMIN_DEFAULT_PASSWORD=senha_pgadmin_segura
+```
+
+**⚠️ ATENÇÃO:** `POSTGRES_PASSWORD` é **obrigatória** e não pode estar vazia!
+CONTROLADORES_PASSWORD=senha_controladores_segura
+
+# OPCIONAIS (mas recomendadas)
+
+PGADMIN_DEFAULT_EMAIL=admin@anpd.gov.br
+PGADMIN_DEFAULT_PASSWORD=senha_pgadmin_segura
+
 ````
 
 ### 3. 📁 Arquivos SQL Corrigidos
@@ -200,3 +274,4 @@ bash /docker-entrypoint-initdb.d/../scripts/debug-health.sh
 
 **Arquivo gerado em:** $(date)
 **Versão docker-compose:** Híbrida com health check otimizado
+````
