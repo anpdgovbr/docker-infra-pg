@@ -2,9 +2,27 @@
 
 ## ❌ Erro Reportado
 
-```
-Failed to deploy a stack: compose up operation failed: dependency failed to start: container anpd-postgres-dev is unhealthy
-```
+````
+Failed to deploy a stack: compose u### 6. 🎯 Solução Rápida Recomendada
+
+**🚀 SOLUÇÃO RÁPIDA PARA BANCOS FALTANDO:**
+
+Se apenas alguns bancos não foram criados devido ao volume existente:
+
+```bash
+# 1. Entre no console do container postgres no Portainer
+# 2. Execute:
+bash /app/scripts/run-sql-files.sh
+
+# OU execute individualmente:
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/10-create-backlog-db.sql
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/11-create-controladores-db.sql
+````
+
+**Health Check Temporário:**
+Se o health check ainda falha, comente temporariamente:eration failed: dependency failed to start: container anpd-postgres-dev is unhealthy
+
+````
 
 ## 🔍 Possíveis Causas e Soluções
 
@@ -35,7 +53,7 @@ CONTROLADORES_PASSWORD=senha_controladores_segura
 # OPCIONAIS (mas recomendadas)
 PGADMIN_DEFAULT_EMAIL=admin@anpd.gov.br
 PGADMIN_DEFAULT_PASSWORD=senha_pgadmin_segura
-```
+````
 
 ### 3. 📁 Arquivos SQL Corrigidos
 
@@ -54,7 +72,62 @@ PGADMIN_DEFAULT_PASSWORD=senha_pgadmin_segura
 - ✅ Removido `\connect` e permissões complexas dos templates
 - ✅ SQLs simplificados para evitar travamentos na inicialização
 
-### 4. 🐳 Problemas no Container
+### 4. �️ Volume Persistente - Scripts Não Executam
+
+**Problema muito comum:** Volume PostgreSQL já existe de deploy anterior
+
+**Sintomas:**
+
+```
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+ℹ️ [generate-gitops-sql.sh] Arquivo init/10-create-backlog-db.sql já existe - pulando
+```
+
+**Explicação:**
+
+- PostgreSQL só executa scripts em `/docker-entrypoint-initdb.d/` na **primeira inicialização**
+- Se o volume `anpd_postgres_data` já existe, os scripts são ignorados
+- Os bancos das aplicações não são criados
+
+**✅ SOLUÇÕES:**
+
+**Opção A - Remover Volume e Reiniciar (RECOMENDADO):**
+
+```bash
+# No Portainer:
+# 1. Parar o stack
+# 2. Remover volumes:
+docker volume rm anpd_postgres_data anpd_pgadmin_data
+# 3. Fazer deploy do stack novamente
+```
+
+**Opção B - Criar Bancos Manualmente:**
+
+```bash
+# Execute no console do container postgres:
+bash /app/scripts/check-databases.sh  # Para verificar bancos existentes
+
+# Se necessário, execute os SQLs manualmente:
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/10-create-backlog-db.sql
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/11-create-controladores-db.sql
+```
+
+**Opção C - Forçar Recriação (CUIDADO - PERDE DADOS):**
+
+```bash
+# No console do container postgres:
+PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<EOF
+DROP DATABASE IF EXISTS backlog_dim_dev;
+DROP DATABASE IF EXISTS controladores_api_dev;
+DROP USER IF EXISTS backlog_user_db;
+DROP USER IF EXISTS controladores_user;
+EOF
+
+# Depois execute os SQLs:
+bash /docker-entrypoint-initdb.d/../scripts/run-sql-files.sh
+```
+
+### 5. �🐳 Problemas no Container
 
 **Passos para diagnóstico no Portainer:**
 
