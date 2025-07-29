@@ -1,58 +1,120 @@
+# ============================================================================
+# DOCKER COMPOSE HÍBRIDO - ANPD PostgreSQL Infrastructure
+# ============================================================================
+# Este arquivo funciona tanto para desenvolvimento local quanto GitOps/Portainer
+#
+# 🏠 MODO LOCAL:
+#   - Use arquivo .env com APPS_CONFIG (formato completo)
+#   - Execute: docker-compose up -d
+#
+# 🚀 MODO GITOPS:
+#   - Configure environment variables no Portainer Stack
+#   - Aplicações definidas em config/apps.conf
+#   - Execute: Use este mesmo arquivo no Portainer
+# ============================================================================
+
 services:
   postgres:
     image: postgres:15
-    container_name: anpd-postgres-dev
+    container_name: ${POSTGRES_CONTAINER_NAME:-anpd-postgres-dev}
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      # Configurações principais
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_TIMEZONE: ${POSTGRES_TIMEZONE:-America/Sao_Paulo}
+
+      # Senhas das aplicações (para GitOps - ignoradas no modo local)
+      BACKLOG_PASSWORD: ${BACKLOG_PASSWORD:-}
+      CONTROLADORES_PASSWORD: ${CONTROLADORES_PASSWORD:-}
+      # Adicione aqui senhas de novas apps conforme necessário
+
     volumes:
-      - pgdata-anpd-dev:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
     networks:
-      - pg-net
+      - postgres_network
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-admin}']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   pgadmin:
-    image: dpage/pgadmin4
-    container_name: anpd-pgadmin-dev
+    image: dpage/pgadmin4:latest
+    container_name: ${PGADMIN_CONTAINER_NAME:-anpd-pgadmin-dev}
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     volumes:
-      - pgadmin-data:/var/lib/pgadmin
+      - pgadmin_data:/var/lib/pgadmin
       - ./config/servers.json:/pgadmin4/servers.json:ro
       - ./pgadmin-init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     ports:
-      - '8085:80'
+      - '${PGADMIN_PORT:-8085}:80'
     networks:
-      - pg-net
+      - postgres_network
     depends_on:
-      - postgres
-      - init-runner
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--quiet',
+          '--tries=1',
+          '--spider',
+          'http://localhost/misc/ping'
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   init-runner:
     build:
       context: .
       dockerfile: Dockerfile.init-runner
-    container_name: run-init-scripts
+    container_name: ${INIT_CONTAINER_NAME:-anpd-init-runner}
+    environment:
+      # Para modo LOCAL (APPS_CONFIG com credenciais completas)
+      APPS_CONFIG: ${APPS_CONFIG:-}
+
+      # Para modo GITOPS (senhas individuais + config/apps.conf)
+      BACKLOG_PASSWORD: ${BACKLOG_PASSWORD:-}
+      CONTROLADORES_PASSWORD: ${CONTROLADORES_PASSWORD:-}
+
+      # Configurações do PostgreSQL
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+
+      # Variáveis legadas (para compatibilidade - serão removidas)
+      BACKLOG_DB: ${BACKLOG_DB:-}
+      BACKLOG_USER: ${BACKLOG_USER:-}
+      BACKLOG_PASS: ${BACKLOG_PASS:-}
     volumes:
       - ./init:/app/init
       - ./config:/app/config
-    environment:
-      - BACKLOG_DB
-      - BACKLOG_USER
-      - BACKLOG_PASS
-      - POSTGRES_DB
-      - POSTGRES_USER
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: 'no'
+    networks:
+      - postgres_network
+
 volumes:
-  pgdata-anpd-dev:
-  pgadmin-data:
+  postgres_data:
+    name: ${POSTGRES_VOLUME_NAME:-anpd_postgres_data}
+  pgadmin_data:
+    name: ${PGADMIN_VOLUME_NAME:-anpd_pgadmin_data}
+
 networks:
-  pg-net:
+  postgres_network:
+    name: ${NETWORK_NAME:-anpd_postgres_network}
+    driver: bridge

@@ -1,4 +1,10 @@
--- Banco e usuário da aplicação backlog-dim (gerado automaticamente)
+-- =======================================================
+-- Banco e usuário da aplicação: {{APP_NAME}}
+-- =======================================================
+-- Gerado automaticamente pelo docker-infra-pg
+-- Database: {{APP_DB}}
+-- User: {{APP_USER}}
+-- =======================================================
 
 -- Criação do banco de dados
 CREATE DATABASE {{APP_DB}};
@@ -14,7 +20,6 @@ $$;
 
 -- Garante que o usuário pode criar bancos (requerido pelo Prisma migrate dev)
 ALTER ROLE {{APP_USER}} CREATEDB;
-
 
 -- Garantir privilégios no banco
 GRANT ALL PRIVILEGES ON DATABASE {{APP_DB}} TO {{APP_USER}};
@@ -37,3 +42,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON SEQUENCES TO {{APP_USER}};
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON FUNCTIONS TO {{APP_USER}};
+
+-- =======================================================
+-- Fim da configuração para {{APP_NAME}}
+-- =======================================================
