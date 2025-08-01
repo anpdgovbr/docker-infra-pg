@@ -81,36 +81,104 @@ function convertToUnixPath(windowsPath) {
 }
 
 // Executa comandos Docker diretamente (sem bash)
-function executeDockerCommands(args = []) {
-  return new Promise((resolve, reject) => {
-    try {
-      log('🐳 Executando comandos Docker diretamente...', 'yellow')
+async function executeDockerCommands(args = []) {
+  try {
+    log('🐳 Executando comandos Docker diretamente...', 'yellow')
 
-      // Verifica se Docker está disponível
-      execSync('docker --version', { stdio: 'ignore' })
-      log('✅ Docker encontrado', 'green')
+    // Processa argumentos
+    const isManual = args.includes('--manual')
+    const isForce = args.includes('--force')
+    const isAuto = args.includes('--auto')
 
-      // Verifica se Docker Compose está disponível
-      execSync('docker compose version', { stdio: 'ignore' })
-      log('✅ Docker Compose encontrado', 'green')
+    // Verifica se Docker está disponível
+    execSync('docker --version', { stdio: 'ignore' })
+    log('✅ Docker encontrado', 'green')
 
-      // Cria pasta infra-db se não existir
-      const infraDbPath = path.join(process.cwd(), 'infra-db')
-      if (!fs.existsSync(infraDbPath)) {
-        fs.mkdirSync(infraDbPath, { recursive: true })
-        log('✅ Pasta infra-db criada', 'green')
+    // Verifica se Docker Compose está disponível
+    execSync('docker compose version', { stdio: 'ignore' })
+    log('✅ Docker Compose encontrado', 'green')
+
+    // Cria pasta infra-db se não existir
+    const infraDbPath = path.join(process.cwd(), 'infra-db')
+    if (!fs.existsSync(infraDbPath)) {
+      fs.mkdirSync(infraDbPath, { recursive: true })
+      log('✅ Pasta infra-db criada', 'green')
+    }
+
+    // Lê .env do projeto para detectar valores existentes
+    const projectEnvPath = path.join(process.cwd(), '.env')
+    let existingEnvVars = {}
+
+    if (fs.existsSync(projectEnvPath)) {
+      const envContent = fs.readFileSync(projectEnvPath, 'utf8')
+      envContent.split('\n').forEach((line) => {
+        const [key, value] = line.split('=')
+        if (key && value) {
+          existingEnvVars[key.trim()] = value.replace(/"/g, '').trim()
+        }
+      })
+      log('📖 Lendo variáveis existentes do .env do projeto', 'blue')
+    }
+
+    // Valores padrão baseados no nome do projeto
+    const projectName = path
+      .basename(process.cwd())
+      .replace(/[@\/]/g, '')
+      .replace(/-/g, '_')
+    let dbName = existingEnvVars.POSTGRES_DB || `${projectName}_dev`
+    let dbUser = existingEnvVars.POSTGRES_USER || 'dev_user'
+    let dbPassword = existingEnvVars.POSTGRES_PASSWORD || 'dev_password'
+
+    // Modo manual: perguntar ao usuário
+    if (isManual && !isAuto) {
+      const readline = require('readline')
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      })
+
+      const question = (prompt) =>
+        new Promise((resolve) => rl.question(prompt, resolve))
+
+      log(
+        '\n🔧 Modo manual ativado - Configure as variáveis do banco:',
+        'yellow'
+      )
+
+      const inputDbName = await question(`📁 Nome do banco [${dbName}]: `)
+      if (inputDbName.trim()) dbName = inputDbName.trim()
+
+      const inputDbUser = await question(`👤 Usuário do banco [${dbUser}]: `)
+      if (inputDbUser.trim()) dbUser = inputDbUser.trim()
+
+      const inputDbPassword = await question(
+        `🔒 Senha do banco [${dbPassword}]: `
+      )
+      if (inputDbPassword.trim()) dbPassword = inputDbPassword.trim()
+
+      rl.close()
+
+      log('\n✅ Configuração manual concluída!', 'green')
+    } else {
+      // Modo automático
+      if (!isForce && !existingEnvVars.POSTGRES_DB) {
+        log(
+          '⚠️  Usando valores padrão. Use --manual para configurar ou --force para continuar',
+          'yellow'
+        )
       }
+    }
 
-      // Cria docker-compose.yml
-      const dockerComposeContent = `version: '3.8'
+    // Cria docker-compose.yml
+    const dockerComposeContent = `version: '3.8'
 services:
   postgres:
     image: postgres:15
     container_name: postgres-dev
     environment:
-      POSTGRES_DB: \${POSTGRES_DB:-dev_db}
-      POSTGRES_USER: \${POSTGRES_USER:-dev_user}
-      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-dev_password}
+      POSTGRES_DB: \${POSTGRES_DB:-${dbName}}
+      POSTGRES_USER: \${POSTGRES_USER:-${dbUser}}
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-${dbPassword}}
     ports:
       - "5432:5432"
     volumes:
@@ -126,54 +194,84 @@ networks:
     driver: bridge
 `
 
-      const dockerComposePath = path.join(infraDbPath, 'docker-compose.yml')
-      fs.writeFileSync(dockerComposePath, dockerComposeContent)
-      log('✅ docker-compose.yml criado', 'green')
+    const dockerComposePath = path.join(infraDbPath, 'docker-compose.yml')
+    fs.writeFileSync(dockerComposePath, dockerComposeContent)
+    log('✅ docker-compose.yml criado', 'green')
 
-      // Cria .env
-      const envContent = `# PostgreSQL Configuration
-POSTGRES_DB=dev_db
-POSTGRES_USER=dev_user
-POSTGRES_PASSWORD=dev_password
+    // Cria/atualiza .env da infraestrutura
+    const infraEnvContent = `# PostgreSQL Configuration
+POSTGRES_DB=${dbName}
+POSTGRES_USER=${dbUser}
+POSTGRES_PASSWORD=${dbPassword}
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
-DATABASE_URL="postgresql://dev_user:dev_password@localhost:5432/dev_db"
+DATABASE_URL="postgresql://${dbUser}:${dbPassword}@localhost:5432/${dbName}"
 `
 
-      const envPath = path.join(infraDbPath, '.env')
-      if (!fs.existsSync(envPath)) {
-        fs.writeFileSync(envPath, envContent)
-        log('✅ .env criado', 'green')
-      } else {
-        log('✅ .env já existe', 'green')
-      }
+    const infraEnvPath = path.join(infraDbPath, '.env')
+    fs.writeFileSync(infraEnvPath, infraEnvContent)
+    log('✅ .env da infraestrutura criado', 'green')
 
-      log('✅ Infraestrutura configurada com sucesso!', 'green')
-      resolve()
-    } catch (error) {
-      if (error.message.includes('docker')) {
-        reject(
-          new Error(
-            'Docker não encontrado. Instale o Docker Desktop: https://www.docker.com/products/docker-desktop'
-          )
-        )
+    // Sincroniza com .env do projeto (preserva outras variáveis)
+    let projectEnvContent = ''
+    if (fs.existsSync(projectEnvPath)) {
+      projectEnvContent = fs.readFileSync(projectEnvPath, 'utf8')
+    }
+
+    // Atualiza ou adiciona variáveis do PostgreSQL
+    const updateEnvVar = (content, key, value) => {
+      const regex = new RegExp(`^${key}=.*$`, 'm')
+      if (regex.test(content)) {
+        return content.replace(regex, `${key}=${value}`)
       } else {
-        reject(error)
+        return content + `\n${key}=${value}`
       }
     }
-  })
+
+    projectEnvContent = updateEnvVar(projectEnvContent, 'POSTGRES_DB', dbName)
+    projectEnvContent = updateEnvVar(projectEnvContent, 'POSTGRES_USER', dbUser)
+    projectEnvContent = updateEnvVar(
+      projectEnvContent,
+      'POSTGRES_PASSWORD',
+      dbPassword
+    )
+    projectEnvContent = updateEnvVar(
+      projectEnvContent,
+      'POSTGRES_HOST',
+      'localhost'
+    )
+    projectEnvContent = updateEnvVar(projectEnvContent, 'POSTGRES_PORT', '5432')
+    projectEnvContent = updateEnvVar(
+      projectEnvContent,
+      'DATABASE_URL',
+      `"postgresql://${dbUser}:${dbPassword}@localhost:5432/${dbName}"`
+    )
+
+    fs.writeFileSync(projectEnvPath, projectEnvContent)
+    log('✅ .env do projeto sincronizado', 'green')
+
+    log('✅ Infraestrutura configurada com sucesso!', 'green')
+  } catch (error) {
+    if (error.message.includes('docker')) {
+      throw new Error(
+        'Docker não encontrado. Instale o Docker Desktop: https://www.docker.com/products/docker-desktop'
+      )
+    } else {
+      throw error
+    }
+  }
 }
 
 // Executa o script
-function executeScript(scriptPath, args = []) {
-  return new Promise((resolve, reject) => {
-    // No Windows, usar comandos Docker diretos em vez de bash
-    if (isWindows) {
-      executeDockerCommands(args).then(resolve).catch(reject)
-      return
-    }
+async function executeScript(scriptPath, args = []) {
+  // No Windows, usar comandos Docker diretos em vez de bash
+  if (isWindows) {
+    await executeDockerCommands(args)
+    return
+  }
 
-    // Para macOS e Linux, usar o método original com bash
+  // Para macOS e Linux, usar o método original com bash
+  return new Promise((resolve, reject) => {
     let command, commandArgs
 
     // macOS e Linux
