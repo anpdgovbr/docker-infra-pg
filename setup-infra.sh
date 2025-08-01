@@ -23,6 +23,14 @@ PARAM_DB_NAME=""
 PARAM_DB_USER=""
 PARAM_DB_PASSWORD=""
 
+# Detectar se está sendo executado via pipe (curl | bash)
+if [[ ! -t 0 ]]; then
+    echo "⚡ Detectado execução via pipe (curl | bash)"
+    echo "🤖 Ativando modo automático para evitar problemas de input"
+    AUTO_MODE=true
+    FORCE_OVERWRITE=true
+fi
+
 # Processar parâmetros
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -70,6 +78,29 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Função segura para ler input com timeout e fallback
+safe_read() {
+    local prompt="$1"
+    local default="$2"
+    local timeout="${3:-5}"
+    
+    if [[ ! -t 0 ]]; then
+        # Stdin não é um terminal (pipe), usar padrão
+        echo "$default"
+        return 0
+    fi
+    
+    local input=""
+    if read -t "$timeout" -p "$prompt" input 2>/dev/null; then
+        echo "${input:-$default}"
+    else
+        # Timeout ou erro, usar padrão
+        echo
+        echo "⚠️  Timeout ou erro na leitura, usando valor padrão: $default"
+        echo "$default"
+    fi
+}
+
 echo "🚀 Configurando infraestrutura PostgreSQL para sua aplicação..."
 echo
 
@@ -87,7 +118,7 @@ INFRA_DIR="infra-db"  # Nome padronizado para a pasta local (sempre infra-db)
 # Verificar se já existe pasta da infraestrutura
 if [[ -d "$INFRA_DIR" ]]; then
     if [[ "$FORCE_OVERWRITE" == "true" ]]; then
-        echo "🔄 Sobrescrevendo diretório $INFRA_DIR existente (--force)..."
+        echo "🔄 Sobrescrevendo diretório $INFRA_DIR existente (--force ou modo automático)..."
         rm -rf "$INFRA_DIR"
     else
         echo "⚠️  Diretório $INFRA_DIR já existe"
@@ -95,8 +126,8 @@ if [[ -d "$INFRA_DIR" ]]; then
         echo "1) Sobrescrever e continuar"
         echo "2) Parar execução"
         echo
-        read -p "Escolha uma opção (1-2): " -n 1 -r OVERWRITE_CHOICE
-        echo
+        
+        OVERWRITE_CHOICE=$(safe_read "Escolha uma opção (1-2): " "2" 10)
         echo
         
         case $OVERWRITE_CHOICE in
@@ -106,7 +137,8 @@ if [[ -d "$INFRA_DIR" ]]; then
                 ;;
             2|*)
                 echo "❌ Execução interrompida pelo usuário"
-                echo "💡 Dica: Use --force para sobrescrever automaticamente"
+                echo "💡 Dica: Use o script com --force para sobrescrever automaticamente"
+                echo "💡 Ou baixe e execute localmente: wget https://raw.../setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh --force --auto"
                 exit 0
                 ;;
         esac
@@ -177,18 +209,18 @@ if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
     # Determinar modo de operação
     if [[ "$AUTO_MODE" == "true" ]]; then
         CHOICE="1"
-        echo "� Modo automático ativado (--auto), gerando dados faltantes..."
+        echo "🤖 Modo automático ativado, gerando dados faltantes..."
     elif [[ "$MANUAL_MODE" == "true" ]]; then
         CHOICE="2"
-        echo "✏️  Modo manual ativado (--manual), solicitando dados..."
+        echo "✏️  Modo manual ativado, solicitando dados..."
     else
-        echo "�🤔 Como deseja proceder?"
+        echo "🤔 Como deseja proceder?"
         echo "1) Gerar automaticamente os dados faltantes"
         echo "2) Informar os dados manualmente agora"
         echo "3) Parar e ajustar o .env manualmente (recomendado para projetos existentes)"
         echo
-        read -p "Escolha uma opção (1-3): " -n 1 -r CHOICE
-        echo
+        
+        CHOICE=$(safe_read "Escolha uma opção (1-3): " "1" 10)
         echo
     fi
     
@@ -201,9 +233,23 @@ if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
             ;;
         2)
             echo "✏️  Informe os dados faltantes:"
-            [[ -z "$DB_NAME" || "$DB_NAME" == "" ]] && { read -p "Nome do banco (padrão: ${APP_NAME}_dev): " input; DB_NAME="${input:-${APP_NAME}_dev}"; }
-            [[ -z "$DB_USER" || "$DB_USER" == "" ]] && { read -p "Usuário do banco (padrão: ${APP_NAME}_user_db): " input; DB_USER="${input:-${APP_NAME}_user_db}"; }
-            [[ -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && { read -p "Senha do banco: " DB_PASSWORD; [[ -z "$DB_PASSWORD" ]] && DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16); }
+            [[ -z "$DB_NAME" || "$DB_NAME" == "" ]] && { 
+                input=$(safe_read "Nome do banco (padrão: ${APP_NAME}_dev): " "${APP_NAME}_dev" 10)
+                DB_NAME="$input"
+            }
+            [[ -z "$DB_USER" || "$DB_USER" == "" ]] && { 
+                input=$(safe_read "Usuário do banco (padrão: ${APP_NAME}_user_db): " "${APP_NAME}_user_db" 10)
+                DB_USER="$input"
+            }
+            [[ -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && { 
+                input=$(safe_read "Senha do banco (Enter para gerar automaticamente): " "" 10)
+                if [[ -z "$input" ]]; then
+                    DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16)
+                    echo "🔐 Senha gerada automaticamente"
+                else
+                    DB_PASSWORD="$input"
+                fi
+            }
             ;;
         3)
             echo "📝 Ajuste manualmente as seguintes variáveis no seu .env:"
@@ -291,8 +337,13 @@ echo
 echo "🔌 String de conexão final (já salva no seu .env):"
 echo "DATABASE_URL=\"$NEW_DATABASE_URL\""
 echo
-echo "� Automação: Para execução não-interativa, use:"
-echo "   $0 --force --auto"
-echo "   $0 --force --db-name=meudb --db-user=meuuser --db-password=minhasenha"
+echo "🚀 Automação: Para execução não-interativa, use:"
+echo "   # Via curl (modo automático):"
+echo "   curl -sSL https://raw.../setup-infra.sh | bash"
+echo ""
+echo "   # Download e execução local:"
+echo "   wget https://raw.../setup-infra.sh && chmod +x setup-infra.sh"
+echo "   ./setup-infra.sh --force --auto"
+echo "   ./setup-infra.sh --force --db-name=meudb --db-user=meuuser --db-password=minhasenha"
 echo
-echo "�🔒 Segurança: Dados existentes preservados, apenas complementados quando necessário"
+echo "🔒 Segurança: Dados existentes preservados, apenas complementados quando necessário"

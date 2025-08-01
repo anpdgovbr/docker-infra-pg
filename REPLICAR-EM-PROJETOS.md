@@ -2,14 +2,101 @@
 
 ## 🎯 Conceito
 
-Esta## 📁 Estrutura Final do Projeto
+Esta infraestrutura é **100% genérica** e se adapta automaticamente ao seu projeto:
+
+- ✅ **Preserva dados existentes** no .env
+- ✅ **Detecta dados faltantes** inteligentemente
+- ✅ **Oferece opções flexíveis** (auto, manual, parar)
+- ✅ **Sincroniza automaticamente** seu .env
+- ✅ **Funciona via pipe** (`curl | bash`) ou local
+- ✅ Funciona com **qualquer projeto ANPD**
+
+## 🚀 Setup Completo
+
+### 1. **No seu projeto, certifique-se que tem:**
+
+```bash
+# Obrigatório: package.json com name
+{
+  "name": "meu-projeto-anpd",
+  ...
+}
+
+# Obrigatório: arquivo .env (pode ter dados vazios ou completos)
+POSTGRES_DB=meu_projeto_dev  # ou vazio: POSTGRES_DB=
+DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"  # ou vazio
+```
+
+### 2. **Execute o setup automático:**
+
+```bash
+# Uma única linha - setup completo!
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
+```
+
+**O que acontece automaticamente:**
+
+- ⚡ **Detecta modo pipe**: Ativa `--force` e `--auto` automaticamente
+- 🔍 **Lê dados existentes**: Preserva tudo que já está no seu .env
+- ⚠️ **Detecta faltantes**: Lista claramente o que precisa (nome, usuário, senha)
+- 🤖 **Gera automaticamente**: Cria dados seguros para o que falta
+- 📂 **Clona infraestrutura**: Para pasta `infra-db/` (sempre padronizado)
+- 🔄 **Sincroniza .env**: Atualiza seu arquivo com dados finais
+
+### 3. **Workflows por Cenário:**
+
+#### 🎯 **Projeto Novo (Recomendado)**
+
+```bash
+# Crie .env básico (pode estar vazio)
+echo 'POSTGRES_DB=' > .env
+echo 'DATABASE_URL=' >> .env
+
+# Execute setup
+npm run infra:setup
+
+# Resultado: Tudo gerado automaticamente!
+# DB_NAME: meu-projeto-anpd_dev
+# DB_USER: meu-projeto-anpd_user_db
+# DB_PASSWORD: [gerada criptograficamente]
+```
+
+#### 🔧 **Projeto Existente (Preservar Dados)**
+
+```bash
+# Seu .env já tem dados
+POSTGRES_DB=meu_projeto_prod
+DATABASE_URL="postgresql://admin:senha123@localhost:5432/meu_projeto_prod?schema=public"
+
+# Execute setup
+npm run infra:setup
+
+# Resultado: Dados preservados integralmente!
+# DB_NAME: meu_projeto_prod (preservado)
+# DB_USER: admin (preservado)
+# DB_PASSWORD: senha123 (preservada)
+```
+
+#### ✏️ **Controle Manual Completo**
+
+```bash
+# Download para controle local
+npm run infra:setup:manual
+
+# Ou especificar dados exatos
+wget https://raw.../setup-infra.sh
+chmod +x setup-infra.sh
+./setup-infra.sh --force --db-name=custom --db-user=myuser --db-password=mypass
+```
+
+## 📁 Estrutura Final do Projeto
 
 Após executar o setup, seu projeto terá:
 
 ```
 meu-projeto/
 ├── package.json
-├── .env                    # ⚠️ Atualize com novas credenciais
+├── .env                    # ✅ Atualizado automaticamente
 ├── infra-db/              # 📂 Infraestrutura PostgreSQL
 │   ├── docker-compose.yml # 🐳 Configuração do banco
 │   ├── .env               # 🔧 Credenciais geradas
@@ -24,46 +111,9 @@ meu-projeto/
 - ✅ `npm run db:setup` → sobe infra + roda migrations
 - ✅ Tudo funciona automaticamente
 
-## 🔧 Templates de .env por Tipo de Projetoinfraestrutura é **100% genérica** e se adapta automaticamente ao seu projeto:
+## 📖 Scripts Completos para package.json
 
-- ✅ Lê configuração do **seu projeto real**
-- ✅ Gera **credenciais únicas** automaticamente
-- ✅ **Zero configuração manual** necessária
-- ✅ Funciona com **qualquer projeto ANPD**
-
-## 🚀 Setup Completo
-
-### 1. **No seu projeto, certifique-se que tem:**
-
-```bash
-# Obrigatório: package.json com name
-{
-  "name": "meu-projeto-anpd",
-  ...
-}
-
-# Obrigatório: .env com config atual do banco
-POSTGRES_DB=meu_projeto_dev
-DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"
-```
-
-### 2. **Execute o setup automático:**
-
-```bash
-# Uma única linha - setup completo!
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
-```
-
-**O que acontece:**
-
-- ✅ Infraestrutura é clonada para pasta `infra-db/` (nome sempre padronizado)
-- ✅ Configuração é gerada automaticamente
-- ✅ Credenciais únicas são criadas
-- ✅ Banco fica pronto para uso
-
-**💡 Nota:** A pasta local sempre será `infra-db/` independente do nome do repositório, garantindo que todos os comandos funcionem consistentemente.
-
-### 3. **Atualize seu .env com as credenciais geradas e adicione scripts recomendados:**
+### 🎮 **Scripts Básicos (Essenciais)**
 
 ```json
 {
@@ -72,182 +122,216 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup
     "infra:up": "cd infra-db && docker-compose up -d",
     "infra:down": "cd infra-db && docker-compose down",
     "infra:logs": "cd infra-db && docker-compose logs -f postgres",
+    "db:setup": "npm run infra:up && sleep 5 && npm run prisma:migrate && npm run prisma:seed"
+  }
+}
+```
+
+### 🚀 **Scripts Avançados (Recomendados)**
+
+```json
+{
+  "scripts": {
+    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash",
+    "infra:setup:manual": "wget -q -O setup-infra.sh https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh --manual && rm setup-infra.sh",
+    "infra:setup:force": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash -s -- --force --auto",
+    "infra:up": "cd infra-db && docker-compose up -d",
+    "infra:down": "cd infra-db && docker-compose down",
+    "infra:logs": "cd infra-db && docker-compose logs -f postgres",
     "infra:reset": "cd infra-db && docker-compose down -v && docker-compose up -d",
+    "infra:clean": "npm run infra:down && rm -rf infra-db",
     "db:setup": "npm run infra:up && sleep 5 && npm run prisma:migrate && npm run prisma:seed",
     "db:fresh": "npm run infra:reset && sleep 10 && npm run db:setup"
   }
 }
 ```
 
-### 4. **Workflow de desenvolvimento:**
+### 🔧 **Scripts Especializados (Opcionais)**
+
+```json
+{
+  "scripts": {
+    "infra:setup:test": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash -s -- --force --db-name=test_db --auto",
+    "infra:setup:prod": "wget -q -O setup-infra.sh https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh --force --db-name=prod_db --db-user=prod_user --db-password=$PROD_DB_PASSWORD && rm setup-infra.sh",
+    "infra:backup": "cd infra-db && docker-compose exec postgres pg_dump -U admin postgres > backup.sql",
+    "infra:restore": "cd infra-db && docker-compose exec -T postgres psql -U admin postgres < backup.sql",
+    "infra:psql": "cd infra-db && docker-compose exec postgres psql -U admin postgres"
+  }
+}
+```
+
+## 🎮 Comandos de Uso Diário
 
 ```bash
 # Setup inicial (primeira vez)
 npm run infra:setup
 
+# Setup com controle manual
+npm run infra:setup:manual
+
+# Setup forçado (CI/CD)
+npm run infra:setup:force
+
 # Desenvolvimento diário
 npm run db:setup && npm run dev
 
+# Gerenciar infraestrutura
+npm run infra:up          # Subir banco
+npm run infra:down        # Parar banco
+npm run infra:logs        # Ver logs do PostgreSQL
+npm run infra:reset       # Reset completo (perde dados)
+
 # Reset do banco (quando necessário)
 npm run db:fresh
+
+# Limpar tudo (remove pasta infra-db)
+npm run infra:clean
+
+# Acesso direto ao PostgreSQL
+npm run infra:psql
 ```
 
-## � Templates de .env.example por Tipo de Projeto
+## 🔧 Parâmetros Avançados
+
+### **Download Local para Máximo Controle:**
+
+```bash
+# Download do script
+wget https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh
+chmod +x setup-infra.sh
+
+# Execução com parâmetros
+./setup-infra.sh --help                    # Ver ajuda
+./setup-infra.sh --force --auto            # Automático forçado
+./setup-infra.sh --manual                  # Modo manual
+./setup-infra.sh --force --db-name=custom --db-user=user --db-password=pass
+
+# Limpeza
+rm setup-infra.sh
+```
+
+### **Variáveis de Ambiente (Avançado):**
+
+```bash
+# Customizar repositório (se necessário)
+export DOCKER_INFRA_REPO=meu-fork-infra
+npm run infra:setup
+```
+
+## 🔧 Templates de .env por Tipo de Projeto
 
 ### **Projeto Next.js com Prisma (padrão ANPD):**
 
 ```bash
 # 📊 BANCO DE DADOS (obrigatório)
-POSTGRES_DB=nome_projeto_dev
-DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"
-
-# 🔐 AUTENTICAÇÃO
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
-
-# 🏢 AZURE AD (se usando auth corporativa)
-AZURE_AD_CLIENT_ID=
-AZURE_AD_CLIENT_SECRET=
-AZURE_AD_TENANT_ID=
-
-# 🌐 DESENVOLVIMENTO
-NODE_TLS_REJECT_UNAUTHORIZED=0
-NEXT_PUBLIC_APP_NAME=Nome da Aplicação
-
-# 📡 APIs específicas do projeto
-# API_BASE_URL=https://api.exemplo.gov.br
-```
-
-### **Projeto React/Vite:**
-
-```bash
-# � BANCO DE DADOS (obrigatório)
-POSTGRES_DB=nome_projeto_dev
-DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"
-
-# 🌐 DESENVOLVIMENTO
-VITE_APP_NAME=Nome da Aplicação
-VITE_API_URL=http://localhost:3001
-
-# Outras variáveis específicas...
-```
-
-## 📊 Como Funciona a Auto-Configuração
-
-### 1. **Script lê seu projeto real:**
-
-```bash
-# Extrai nome do projeto
-PROJECT_NAME=$(node -p "require('./package.json').name")
-
-# Lê configuração atual do banco (do .env real)
-DB_CONFIG=$(grep POSTGRES_DB .env)
-```
-
-### 2. **Gera credenciais únicas automaticamente:**
-
-```bash
-# Senha segura aleatória (SEMPRE nova)
-DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16)
-
-# Usuário baseado no projeto
-DB_USER="${PROJECT_NAME}_user_db"
-```
-
-### 3. **Cria infraestrutura personalizada:**
-
-- ✅ docker-compose.yml com nome correto
-- ✅ .env com credenciais geradas automaticamente
-- ✅ Scripts de inicialização do banco
-- ✅ DATABASE_URL pronta com credenciais reais
-
-### 4. **Mantém segurança total:**
-
-- 🔒 Nunca usa senhas hardcoded
-- 🔒 Sempre gera credenciais únicas
-- 🔒 Lê configuração do projeto real (não examples)
-- 🔒 Zero risco de vazamento de dados
-
-## ✅ Vantagens Desta Abordagem
-
-### **Para Desenvolvedores:**
-
-- 🚀 Setup em 1 comando
-- 🔒 Credenciais sempre seguras
-- 🎯 Zero configuração manual
-- 📝 Documentação automática
-
-### **Para Projetos:**
-
-- 🔄 Reutilização total
-- 🎨 Adaptação automática
-- 🛡️ Isolamento garantido
-- 📈 Padronização natural
-
-### **Para a ANPD:**
-
-- 🏗️ Infraestrutura unificada
-- 🔧 Manutenção centralizada
-- 📚 Conhecimento padronizado
-- ⚡ Produtividade maximizada
-
-## 💡 Exemplos de Uso Real
-
-### **Qualquer projeto ANPD:**
-
-```bash
-# 1. Setup (uma vez)
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
-
-# 2. Desenvolvimento diário
-npm run db:setup && npm run dev
-```
-
-### **Novo projeto exemplo:**
-
-```bash
-# 1. Configure .env.example
 POSTGRES_DB=meu_projeto_dev
 DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"
 
-# 2. Setup automático
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
+# 🔐 AUTENTICAÇÃO (opcional)
+NEXTAUTH_SECRET=your-secret-here
+NEXTAUTH_URL=http://localhost:3000
 
-# 3. Banco funcionando!
-npm run infra:up
+# 🌐 AMBIENTE (opcional)
+NODE_ENV=development
+PORT=3000
 ```
 
-## 📝 Notas Importantes
+### **Projeto Node.js/Express:**
 
-### ✅ **Faça Sempre:**
+```bash
+# 📊 BANCO DE DADOS
+POSTGRES_DB=api_project_dev
+DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"
 
-- Configure `.env.example` completo antes do setup
-- Use nomes descritivos para bancos (`projeto_dev`)
-- Adicione scripts recomendados ao `package.json`
-- Documente variáveis específicas do projeto
+# 🚀 SERVIDOR
+PORT=8000
+NODE_ENV=development
 
-### ❌ **Nunca Faça:**
+# 🔐 JWT (se usar)
+JWT_SECRET=your-jwt-secret
+```
 
-- Commitar arquivo `.env` real
-- Usar dados reais em templates
-- Modificar a infraestrutura para ser específica
-- Hardcoded credenciais nos scripts
+### **Projeto em Produção:**
 
-### 🛡️ **Segurança:**
+```bash
+# 📊 BANCO DE DADOS PRODUÇÃO
+POSTGRES_DB=meu_projeto_prod
+DATABASE_URL="postgresql://prod_user:secure_password@localhost:5432/meu_projeto_prod?schema=public"
 
-- Senhas são sempre geradas automaticamente
-- Cada projeto tem credenciais únicas
-- Bancos são isolados por projeto
-- Templates nunca contêm dados reais
+# 🌐 AMBIENTE
+NODE_ENV=production
+PORT=3000
+
+# 🔐 SEGURANÇA
+NEXTAUTH_SECRET=super-secure-secret-for-production
+```
+
+## 🚨 Resolução de Problemas
+
+### **Problema: "Não consegue ler input via curl | bash"**
+
+```bash
+# Solução: O script detecta automaticamente e usa modo automático
+# Não precisa fazer nada, vai funcionar!
+
+# Alternativa: Download local
+wget https://raw.../setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh
+```
+
+### **Problema: "Diretório infra-db já existe"**
+
+```bash
+# Solução 1: Usar --force
+npm run infra:setup:force
+
+# Solução 2: Limpar e recriar
+npm run infra:clean && npm run infra:setup
+```
+
+### **Problema: "Dados no .env não são detectados"**
+
+```bash
+# Verificar formato (sem espaços extras):
+POSTGRES_DB=meudb
+DATABASE_URL="postgresql://user:pass@localhost:5432/db?schema=public"
+
+# Não pode ter:
+POSTGRES_DB = meudb        # espaços extras
+DATABASE_URL='...'         # aspas simples
+```
+
+### **Problema: "Script não encontra package.json"**
+
+```bash
+# Executar na pasta raiz do projeto:
+cd /caminho/para/meu-projeto
+npm run infra:setup
+```
+
+## 🔒 Segurança e Boas Práticas
+
+### ✅ **O que o Script FAZ:**
+
+- Preserva credenciais existentes
+- Gera senhas criptograficamente seguras
+- Isola bancos por projeto
+- Sincroniza .env automaticamente
+- Remove .git da infra clonada
+
+### ✅ **O que o Script NÃO FAZ:**
+
+- Não expõe senhas em logs
+- Não sobrescreve dados sem permissão
+- Não conecta em bancos externos
+- Não modifica arquivos fora do projeto
+
+### 🔐 **Recomendações:**
+
+- Sempre revise o .env após setup
+- Use senhas diferentes por ambiente
+- Mantenha .env no .gitignore
+- Use variáveis de ambiente em produção
 
 ---
 
-## 🎯 Resultado Final
-
-**Qualquer projeto ANPD em 1 comando:**
-
-```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
-```
-
-**Zero configuração. Máxima produtividade. Segurança total.** 🚀
+**Uma infraestrutura. Todos os projetos ANPD. Zero configuração manual.** 🎉

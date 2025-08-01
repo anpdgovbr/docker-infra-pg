@@ -2,9 +2,13 @@
 
 > **Infraestrutura genérica e auto-configurável para qualquer projeto ANPD**
 
-## 🚀 Setup Rápido (Uma Linha)
+## 🚀 Setup Rápido (Uma Li## 📚 Documentação Completa
 
-No seu projeto, execute:
+- 📖 **[REPLICAR-EM-PROJETOS.md](./REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
+- 📋 **[SCRIPTS-PACKAGE-JSON.md](./SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para package.json
+- 🚀 **[CI-CD.md](./CI-CD.md)** - Automação e pipelines de CI/CD
+- 🔧 **[docs/](./docs/)** - Documentação técnica detalhada
+  No seu projeto, execute:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
@@ -17,7 +21,7 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup
 Seu projeto deve ter:
 
 1. **package.json** com nome do projeto
-2. **.env** com configuração atual do banco:
+2. **.env** com configuração atual do banco (pode estar vazio):
    ```bash
    POSTGRES_DB=meu_projeto_dev
    DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"
@@ -26,21 +30,61 @@ Seu projeto deve ter:
 ## 🎯 Como Funciona
 
 1. **Script lê seu projeto** (package.json + .env)
-2. **Gera credenciais únicas** automaticamente
-3. **Clona esta infraestrutura** para pasta `infra-db/`
-4. **Configura tudo** baseado no seu projeto
-5. **Fornece nova DATABASE_URL** segura
+2. **Detecta dados faltantes** (nome, usuário, senha do banco)
+3. **Oferece opções inteligentes** (auto-gerar, manual, ou parar)
+4. **Clona esta infraestrutura** para pasta `infra-db/`
+5. **Configura tudo** baseado no seu projeto
+6. **Sincroniza seu .env** com dados finais
 
 > **💡 Nota:** A pasta local sempre será `infra-db/` independente do nome do repositório, garantindo que todos os comandos funcionem consistentemente em qualquer projeto.
 
 ## ✅ Resultado
 
 - ✅ PostgreSQL isolado para seu projeto
-- ✅ Credenciais únicas e seguras
+- ✅ Credenciais únicas e seguras (preserva existentes)
 - ✅ Zero configuração manual
 - ✅ Banco pronto para Prisma/migrations
+- ✅ Sincronização automática do .env
 
-## 📖 Scripts Recomendados
+## 🔧 Modos de Execução
+
+### 🤖 **Modo Automático (Recomendado para CI/CD)**
+
+```bash
+# Via curl (detecta pipe automaticamente)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
+
+# Local com parâmetros
+./setup-infra.sh --force --auto
+```
+
+### ✏️ **Modo Manual (Controle Total)**
+
+```bash
+# Download primeiro
+wget https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh
+chmod +x setup-infra.sh
+
+# Execução interativa
+./setup-infra.sh --manual
+
+# Ou com dados específicos
+./setup-infra.sh --force --db-name=meudb --db-user=meuuser --db-password=minhasenha
+```
+
+### 📚 **Parâmetros Disponíveis**
+
+```bash
+--force               # Sobrescrever infra-db sem perguntar
+--auto                # Gerar dados faltantes automaticamente
+--manual              # Pedir dados faltantes via prompt
+--db-name=NOME        # Nome do banco
+--db-user=USER        # Usuário do banco
+--db-password=PASS    # Senha do banco
+--help, -h            # Mostrar ajuda
+```
+
+## 📖 Scripts Recomendados para package.json
 
 Adicione ao seu `package.json`:
 
@@ -48,10 +92,58 @@ Adicione ao seu `package.json`:
 {
   "scripts": {
     "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash",
+    "infra:setup:manual": "wget -q -O setup-infra.sh https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh --manual && rm setup-infra.sh",
+    "infra:setup:force": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash -s -- --force --auto",
     "infra:up": "cd infra-db && docker-compose up -d",
     "infra:down": "cd infra-db && docker-compose down",
     "infra:logs": "cd infra-db && docker-compose logs -f postgres",
-    "db:setup": "npm run infra:up && sleep 5 && npm run prisma:migrate && npm run prisma:seed"
+    "infra:reset": "cd infra-db && docker-compose down -v && docker-compose up -d",
+    "infra:clean": "npm run infra:down && rm -rf infra-db",
+    "db:setup": "npm run infra:up && sleep 5 && npm run prisma:migrate && npm run prisma:seed",
+    "db:fresh": "npm run infra:reset && sleep 10 && npm run db:setup"
+  }
+}
+```
+
+### 🎮 **Comandos de Uso Diário**
+
+```bash
+# Setup inicial (primeira vez)
+npm run infra:setup
+
+# Setup com controle manual
+npm run infra:setup:manual
+
+# Setup forçado (CI/CD)
+npm run infra:setup:force
+
+# Desenvolvimento diário
+npm run db:setup && npm run dev
+
+# Gerenciar infraestrutura
+npm run infra:up          # Subir banco
+npm run infra:down        # Parar banco
+npm run infra:logs        # Ver logs
+npm run infra:reset       # Reset completo
+
+# Reset do banco (quando necessário)
+npm run db:fresh
+
+# Limpar tudo
+npm run infra:clean
+```
+
+## 🔧 Scripts Avançados (Opcionais)
+
+Para projetos com necessidades específicas:
+
+```json
+{
+  "scripts": {
+    "infra:setup:prod": "wget -q -O setup-infra.sh https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh --force --db-name=meu_projeto_prod --db-user=prod_user --db-password=$PROD_DB_PASSWORD && rm setup-infra.sh",
+    "infra:setup:test": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash -s -- --force --db-name=test_db --auto",
+    "infra:backup": "cd infra-db && docker-compose exec postgres pg_dump -U admin postgres > backup.sql",
+    "infra:restore": "cd infra-db && docker-compose exec -T postgres psql -U admin postgres < backup.sql"
   }
 }
 ```
@@ -65,9 +157,10 @@ Adicione ao seu `package.json`:
 
 ## 📚 Documentação
 
-- **[COMO USAR](REPLICAR-EM-PROJETOS.md)** - Guia completo
+- **[COMO USAR](REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
+- **[SCRIPTS PACKAGE.JSON](SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para diferentes projetos
 - **[docs/](docs/)** - Documentação técnica detalhada
 
 ---
 
-**Uma infraestrutura. Todos os projetos ANPD. Zero configuração.** 🎉
+**Uma infraestrutura. Todos os projetos ANPD. Zero configuração manual.** 🎉
