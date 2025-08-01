@@ -66,6 +66,73 @@ function downloadScript(scriptName, targetPath) {
   })
 }
 
+// Verifica e atualiza package.json se necessário
+async function checkAndUpdatePackageJson(extension) {
+  try {
+    const packageJsonPath = path.join(process.cwd(), 'package.json')
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+
+    if (!packageJson.scripts) {
+      packageJson.scripts = {}
+    }
+
+    // Verifica se tem script infra:update
+    if (!packageJson.scripts['infra:update']) {
+      log('📦 Adicionando script infra:update ao package.json...', 'yellow')
+
+      packageJson.scripts[
+        'infra:update'
+      ] = `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js -o .infra/update-scripts.${extension} && node .infra/update-scripts.${extension}`
+
+      // Salva package.json atualizado
+      fs.writeFileSync(
+        packageJsonPath,
+        JSON.stringify(packageJson, null, 2) + '\n'
+      )
+      log('✅ Script infra:update adicionado!', 'green')
+    }
+
+    // Verifica se scripts existentes estão usando extensão correta
+    let scriptsUpdated = 0
+    const infraScripts = Object.keys(packageJson.scripts).filter((key) =>
+      key.startsWith('infra:')
+    )
+
+    for (const scriptKey of infraScripts) {
+      const script = packageJson.scripts[scriptKey]
+      const wrongExtension = extension === 'cjs' ? '.js' : '.cjs'
+      const correctExtension = `.${extension}`
+
+      if (script.includes(`/infra/`) && script.includes(wrongExtension)) {
+        packageJson.scripts[scriptKey] = script.replace(
+          new RegExp(
+            `\\.infra/([^\\s]+)${wrongExtension.replace('.', '\\.')}`,
+            'g'
+          ),
+          `.infra/$1${correctExtension}`
+        )
+        scriptsUpdated++
+      }
+    }
+
+    if (scriptsUpdated > 0) {
+      fs.writeFileSync(
+        packageJsonPath,
+        JSON.stringify(packageJson, null, 2) + '\n'
+      )
+      log(
+        `✅ ${scriptsUpdated} scripts atualizados no package.json para usar .${extension}`,
+        'green'
+      )
+    }
+  } catch (error) {
+    log(
+      `⚠️  Aviso: Não foi possível verificar package.json: ${error.message}`,
+      'yellow'
+    )
+  }
+}
+
 // Função principal
 async function main() {
   try {
@@ -82,10 +149,25 @@ async function main() {
 
     // Verifica se pasta .infra existe
     const infraDir = path.join(process.cwd(), '.infra')
+    const infraDbDir = path.join(process.cwd(), 'infra-db')
+
     if (!fs.existsSync(infraDir)) {
-      log('❌ Pasta .infra não encontrada!', 'red')
-      log('💡 Execute primeiro: npm run infra:setup', 'yellow')
-      process.exit(1)
+      // Verifica se tem pasta infra-db (infraestrutura antiga)
+      if (fs.existsSync(infraDbDir)) {
+        log(
+          '🔄 Infraestrutura antiga detectada (pasta infra-db/ existe)',
+          'yellow'
+        )
+        log('📦 Criando pasta .infra/ e baixando scripts...', 'blue')
+
+        // Cria pasta .infra
+        fs.mkdirSync(infraDir, { recursive: true })
+        log('✅ Pasta .infra/ criada', 'green')
+      } else {
+        log('❌ Pasta .infra não encontrada!', 'red')
+        log('💡 Execute primeiro: npm run infra:setup', 'yellow')
+        process.exit(1)
+      }
     }
 
     // Detecta extensão correta
@@ -113,6 +195,9 @@ async function main() {
         process.exit(1)
       }
     }
+
+    // Verifica se precisa atualizar package.json (para projetos que migraram)
+    await checkAndUpdatePackageJson(extension)
 
     log('', 'reset')
     log('🎉 Todos os scripts foram atualizados!', 'green')

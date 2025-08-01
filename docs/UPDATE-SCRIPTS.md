@@ -4,6 +4,8 @@
 
 Sempre que **atualizarmos scripts** no repositório da infraestrutura e você quiser ter as **últimas melhorias** no seu projeto.
 
+**🆕 Funciona automaticamente** mesmo se for a primeira vez em projetos que já tinham infraestrutura antiga!
+
 ## 🎯 **Comando**:
 
 ```bash
@@ -13,21 +15,37 @@ npm run infra:update
 ## 💡 **O que faz?**
 
 1. ✅ **Detecta o tipo** do projeto (CommonJS ou ES Module)
-2. ✅ **Baixa versões mais recentes** dos scripts:
+2. ✅ **Cria pasta `.infra/`** se não existir (mas pasta `infra-db/` existe)
+3. ✅ **Baixa versões mais recentes** dos scripts:
    - `setup-cross-platform.js` (ou `.cjs`)
    - `docker-helper.js` (ou `.cjs`)
    - `db-helper.js` (ou `.cjs`)
-3. ✅ **Preserva compatibilidade** usando extensão correta
-4. ✅ **Atualiza apenas** os scripts, mantém configurações
+4. ✅ **Atualiza package.json** se necessário (adiciona script `infra:update`)
+5. ✅ **Corrige extensões** nos scripts existentes (.js ↔ .cjs)
+6. ✅ **Preserva configurações** (não toca em .env, docker-compose.yml)## 📋 **Cenários de uso**:
 
-## 📋 **Exemplo de uso**:
+### 🆕 **Primeira vez em projeto com infraestrutura antiga**:
 
 ```bash
-# No seu projeto que já tem infraestrutura configurada
+cd meu-projeto-que-ja-tinha-infra
+# Tem pasta infra-db/ mas não tem .infra/
+
+npm run infra:update
+# ✅ Detecta pasta infra-db/
+# ✅ Cria pasta .infra/
+# ✅ Baixa scripts atualizados
+# ✅ Adiciona script infra:update ao package.json
+```
+
+### 🔄 **Atualização normal**:
+
+```bash
 cd meu-projeto
 
 # Atualizar para última versão dos scripts
 npm run infra:update
+# ✅ Atualiza scripts existentes
+# ✅ Corrige extensões se necessário
 
 # Agora pode usar melhorias mais recentes
 npm run infra:up
@@ -35,7 +53,26 @@ npm run infra:up
 
 ## 🔍 **Output esperado**:
 
+### **Primeira vez (migração)**:
+
 ```
+🔄 Atualizando scripts da infraestrutura...
+🔄 Infraestrutura antiga detectada (pasta infra-db/ existe)
+📦 Criando pasta .infra/ e baixando scripts...
+✅ Pasta .infra/ criada
+📦 Projeto ES Module detectado - usando .cjs
+✅ Atualizado: setup-cross-platform.cjs
+✅ Atualizado: docker-helper.cjs
+✅ Atualizado: db-helper.cjs
+📦 Adicionando script infra:update ao package.json...
+✅ Script infra:update adicionado!
+
+🎉 Todos os scripts foram atualizados!
+```
+
+### **Atualização normal**:
+
+````
 🔄 Atualizando scripts da infraestrutura...
 📦 Projeto ES Module detectado - usando .cjs
 ✅ Atualizado: setup-cross-platform.cjs
@@ -50,9 +87,7 @@ npm run infra:up
   ✅ .infra/db-helper.cjs
 
 💡 Agora você pode usar os comandos com as últimas melhorias!
-```
-
-## ⚠️ **Requisitos**:
+```## ⚠️ **Requisitos**:
 
 - ✅ Projeto Node.js com `package.json`
 - ✅ Pasta `.infra/` já existir (criada pelo `infra:setup`)
@@ -69,3 +104,4 @@ npm run infra:up
 ---
 
 **💡 Dica**: Execute `npm run infra:update` periodicamente para ter sempre as últimas melhorias e correções!
+````
