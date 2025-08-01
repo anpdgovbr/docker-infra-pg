@@ -128,6 +128,7 @@ function generateInfraScripts() {
     'infra:setup': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.${extension} && node .infra/setup-cross-platform.${extension}`,
     'infra:setup:manual': `node .infra/setup-cross-platform.${extension} --manual`,
     'infra:setup:force': `node .infra/setup-cross-platform.${extension} --force --auto`,
+    'infra:update': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js -o .infra/update-scripts.${extension} && node .infra/update-scripts.${extension}`,
     'infra:up': `node .infra/docker-helper.${extension} up`,
     'infra:down': `node .infra/docker-helper.${extension} down`,
     'infra:logs': `node .infra/docker-helper.${extension} logs`,

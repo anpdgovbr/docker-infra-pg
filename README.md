@@ -201,6 +201,9 @@ npm run infra:setup:manual
 # Setup forçado (CI/CD)
 npm run infra:setup:force
 
+# Atualizar scripts (quando há melhorias no repo)
+npm run infra:update
+
 # Desenvolvimento diário
 npm run db:setup && npm run dev
 
