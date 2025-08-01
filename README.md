@@ -4,6 +4,7 @@
 
 - 📖 **[REPLICAR-EM-PROJETOS.md](./REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
 - 📋 **[SCRIPTS-PACKAGE-JSON.md](./SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para package.json
+- 🔗 **[INTEGRACAO-PROJETO-EXISTENTE.md](./INTEGRACAO-PROJETO-EXISTENTE.md)** - Como integrar em projetos que já existem
 - 🌍 **[CROSS-PLATFORM.md](./CROSS-PLATFORM.md)** - Helpers cross-platform (Node.js)
 - 🚀 **[CI-CD.md](./CI-CD.md)** - Automação e pipelines de CI/CD
 - 🔧 **[docs/](./docs/)** - Documentação técnica detalhada
@@ -26,26 +27,46 @@ Agora funciona perfeitamente em **Windows, macOS e Linux** usando Node.js! 🎉
 
 ## 🚀 Setup Rápido (Universal)
 
-### **Opção 1: Adicionar ao package.json (Recomendado)**
+### **🤖 Opção 1: Auto-Setup (Mais Fácil)**
+
+Um comando que configura tudo automaticamente:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+```
+
+Isso irá:
+
+- ✅ Adicionar scripts `infra:*` ao package.json (sem conflitos)
+- ✅ Configurar .gitignore automaticamente
+- ✅ Criar estrutura de pastas
+- ✅ Não modificar scripts existentes
+
+```bash
+npm run infra:setup  # Configura infraestrutura
+npm run dev          # Seu projeto funcionando!
+```
+
+### **📝 Opção 2: Manual (Para quem quer controle)**
 
 ```json
 {
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:up": "node docker-helper.js up",
-    "db:setup": "node db-helper.js setup"
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:db:init": "node .infra/db-helper.js setup"
   }
 }
 ```
 
+**✅ Sem Conflitos**: Scripts usam prefixo `infra:*` - não interferem com scripts existentes do Prisma, Next.js, etc.
+
 ```bash
-npm install        # Baixa helpers automaticamente
 npm run infra:setup  # Configura infraestrutura
-npm run dev        # Seu projeto funcionando!
+npm run dev          # Seu projeto funcionando!
 ```
 
-### **Opção 2: Comando Direto (Bash)**
+### **Opção 3: Comando Direto (Bash)**
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash

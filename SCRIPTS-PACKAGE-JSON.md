@@ -13,13 +13,18 @@ Para projetos simples que só precisam do essencial:
 ```json
 {
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "db:setup": "node db-helper.js setup"
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:db:init": "node .infra/db-helper.js setup"
   }
 }
+```
+
+**💡 Ainda mais fácil:** Use o auto-setup
+
+```bash
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 ```
 
 ## 🚀 Scripts Completos (Recomendado) - Cross-Platform
@@ -41,13 +46,13 @@ Para desenvolvimento profissional com todas as funcionalidades:
     "infra:psql": "node docker-helper.js psql",
     "infra:status": "node docker-helper.js status",
     "infra:backup": "node docker-helper.js backup",
-    "db:setup": "node db-helper.js setup",
-    "db:fresh": "node db-helper.js fresh",
-    "db:migrate": "node db-helper.js migrate",
-    "db:seed": "node db-helper.js seed",
-    "db:studio": "node db-helper.js studio",
-    "db:reset": "node db-helper.js reset",
-    "dev": "npm run db:setup && next dev"
+    "infra:db:init": "node db-helper.js setup",
+    "infra:db:fresh": "node db-helper.js fresh",
+    "infra:db:migrate": "node db-helper.js migrate",
+    "infra:db:seed": "node db-helper.js seed",
+    "infra:db:studio": "node db-helper.js studio",
+    "infra:db:reset": "node db-helper.js reset",
+    "dev": "npm run infra:db:init && next dev"
   }
 }
 ```
@@ -70,10 +75,10 @@ Para ambientes automatizados e produção:
     "infra:reset": "node docker-helper.js reset",
     "infra:backup": "node docker-helper.js backup",
     "infra:restore": "node docker-helper.js restore",
-    "db:setup": "node db-helper.js setup",
-    "db:fresh": "node db-helper.js fresh",
-    "db:migrate": "node db-helper.js migrate",
-    "db:seed": "node db-helper.js seed",
+    "infra:db:init": "node db-helper.js setup",
+    "infra:db:fresh": "node db-helper.js fresh",
+    "infra:db:migrate": "node db-helper.js migrate",
+    "infra:db:seed": "node db-helper.js seed",
     "test:integration": "npm run infra:setup:test && npm run test",
     "build:prod": "npm run infra:setup:prod && npm run build"
   }
@@ -89,7 +94,7 @@ Para projetos Next.js com Prisma (mais comum na ANPD):
   "name": "@anpdgovbr/meu-projeto",
   "scripts": {
     "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "dev": "npm run db:setup && next dev",
+    "dev": "npm run infra:db:init && next dev",
     "build": "next build",
     "start": "next start",
     "infra:setup": "node setup-cross-platform.js",
@@ -99,12 +104,12 @@ Para projetos Next.js com Prisma (mais comum na ANPD):
     "infra:logs": "node docker-helper.js logs",
     "infra:reset": "node docker-helper.js reset",
     "infra:clean": "node docker-helper.js clean",
-    "db:setup": "node db-helper.js setup",
-    "db:fresh": "node db-helper.js fresh",
-    "db:migrate": "node db-helper.js migrate",
-    "db:seed": "node db-helper.js seed",
-    "db:studio": "node db-helper.js studio",
-    "db:reset": "node db-helper.js reset",
+    "infra:db:init": "node db-helper.js setup",
+    "infra:db:fresh": "node db-helper.js fresh",
+    "infra:db:migrate": "node db-helper.js migrate",
+    "infra:db:seed": "node db-helper.js seed",
+    "infra:db:studio": "node db-helper.js studio",
+    "infra:db:reset": "node db-helper.js reset",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:seed": "npx prisma db seed",
     "prisma:studio": "npx prisma studio",
@@ -122,18 +127,18 @@ Para APIs e backends:
   "name": "@anpdgovbr/minha-api",
   "scripts": {
     "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "dev": "npm run db:setup && nodemon src/server.js",
+    "dev": "npm run infra:db:init && nodemon src/server.js",
     "start": "node src/server.js",
     "infra:setup": "node setup-cross-platform.js",
     "infra:up": "node docker-helper.js up",
     "infra:down": "node docker-helper.js down",
     "infra:logs": "node docker-helper.js logs",
     "infra:reset": "node docker-helper.js reset",
-    "db:setup": "node db-helper.js setup",
-    "db:fresh": "node db-helper.js fresh",
-    "db:migrate": "node db-helper.js migrate",
-    "db:seed": "node db-helper.js seed",
-    "db:studio": "node db-helper.js studio",
+    "infra:db:init": "node db-helper.js setup",
+    "infra:db:fresh": "node db-helper.js fresh",
+    "infra:db:migrate": "node db-helper.js migrate",
+    "infra:db:seed": "node db-helper.js seed",
+    "infra:db:studio": "node db-helper.js studio",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:integration": "npm run infra:setup:test && npm run test"
@@ -153,15 +158,83 @@ Para projetos com pipeline automatizado:
     "infra:setup:ci": "node setup-cross-platform.js --force --auto",
     "infra:up": "node docker-helper.js up",
     "infra:down": "node docker-helper.js down",
-    "db:setup": "node db-helper.js setup",
-    "db:setup:ci": "npm run infra:setup:ci && npm run db:setup",
+    "infra:db:init": "node db-helper.js setup",
+    "infra:db:init:ci": "npm run infra:setup:ci && npm run infra:db:init",
     "test": "jest",
-    "test:ci": "npm run db:setup:ci && npm run test",
+    "test:ci": "npm run infra:db:init:ci && npm run test",
     "build": "next build",
-    "build:ci": "npm run db:setup:ci && npm run build",
+    "build:ci": "npm run infra:db:init:ci && npm run build",
     "deploy": "npm run build && npm run deploy:vercel"
   }
 }
+```
+
+## �️ **Template para Projetos ANPD Existentes**
+
+Para projetos como `@anpdgovbr/backlog-dim` que já têm scripts estabelecidos:
+
+```json
+{
+  "scripts": {
+    "build": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=1 npx prisma generate && next build",
+    "dev": "npm run build-routes && npm run infra:db:init && next dev --turbopack",
+    "start": "next start",
+
+    "prisma:migrate": "npx prisma migrate dev --name init",
+    "prisma:push": "npx prisma db push",
+    "prisma:reset": "npx prisma migrate reset --force",
+    "prisma:seed": "npx prisma db seed",
+    "prisma:studio": "npx prisma studio",
+
+    "db:reset": "npx prisma migrate reset --force",
+    "db:seed": "npx tsx prisma/seed.ts",
+
+    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js && node setup-cross-platform.js",
+    "infra:setup:manual": "node setup-cross-platform.js --manual",
+    "infra:setup:force": "node setup-cross-platform.js --force --auto",
+    "infra:up": "node docker-helper.js up",
+    "infra:down": "node docker-helper.js down",
+    "infra:logs": "node docker-helper.js logs",
+    "infra:reset": "node docker-helper.js reset",
+    "infra:clean": "node docker-helper.js clean",
+    "infra:psql": "node docker-helper.js psql",
+    "infra:status": "node docker-helper.js status",
+    "infra:backup": "node docker-helper.js backup",
+    "infra:db:init": "node db-helper.js setup",
+    "infra:db:fresh": "node db-helper.js fresh"
+  }
+}
+```
+
+### **✅ Vantagens desta Abordagem:**
+
+1. **Sem Conflitos**: Scripts da infraestrutura usam prefixo `infra:*`
+2. **Preserva Scripts Existentes**: Mantém todos os scripts do Prisma e projeto
+3. **Integração Simples**: Apenas adiciona `npm run infra:db:init` no script `dev`
+4. **Flexibilidade**: Pode usar tanto scripts da infra quanto scripts nativos do Prisma
+
+### **📝 Como Integrar em Projeto Existente:**
+
+1. **Adicione os scripts da infraestrutura** ao seu `package.json` existente
+2. **Modifique apenas o script `dev`** para incluir `npm run infra:db:init &&`
+3. **Mantenha todos os outros scripts** como estão
+4. **Execute uma vez**: `npm run infra:setup` para configurar
+
+### **🎯 Scripts de Uso Diário:**
+
+```bash
+# Primeira vez (setup da infraestrutura)
+npm run infra:setup
+
+# Desenvolvimento diário
+npm run dev  # Já inclui infra:db:init
+
+# Se quiser usar só a infraestrutura
+npm run infra:up
+
+# Se quiser usar scripts Prisma nativos
+npm run prisma:studio
+npm run prisma:migrate
 ```
 
 ## 🌍 **VANTAGENS dos Scripts Cross-Platform**
@@ -228,6 +301,23 @@ npm run infra:setup      # Setup do zero
 npm run infra:setup:ci   # Setup automático forçado
 npm run test             # Testes
 npm run build            # Build
+```
+
+### **Uso Misto (Infraestrutura + Prisma Nativo)**
+
+```bash
+# Usar infraestrutura para banco local
+npm run infra:up
+
+# Usar comandos Prisma nativos
+npm run prisma:studio
+npm run prisma:migrate
+npm run prisma:seed
+
+# Ou usar helpers da infraestrutura
+npm run infra:db:studio
+npm run infra:db:migrate
+npm run infra:db:seed
 ```
 
 ## 💡 Dicas de Personalização
