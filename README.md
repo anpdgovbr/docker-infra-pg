@@ -31,6 +31,8 @@ Seu projeto deve ter:
 4. **Configura tudo** baseado no seu projeto
 5. **Fornece nova DATABASE_URL** segura
 
+> **💡 Nota:** A pasta local sempre será `infra-db/` independente do nome do repositório, garantindo que todos os comandos funcionem consistentemente em qualquer projeto.
+
 ## ✅ Resultado
 
 - ✅ PostgreSQL isolado para seu projeto
