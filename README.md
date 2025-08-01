@@ -35,11 +35,15 @@ Um comando que configura tudo automaticamente:
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 ```
 
+**🎯 Para projetos ES Module (type: "module"):**
+O auto-setup detecta automaticamente e configura arquivos `.cjs` para compatibilidade.
+
 Isso irá:
 
 - ✅ Adicionar scripts `infra:*` ao package.json (sem conflitos)
 - ✅ Configurar .gitignore automaticamente
-- ✅ Criar estrutura de pastas
+- ✅ Criar estrutura de pastas `.infra/`
+- ✅ Detectar ES modules e configurar extensões corretas
 - ✅ Não modificar scripts existentes
 
 ```bash

@@ -13,6 +13,36 @@ Agora todos os scripts funcionam em **qualquer OS que rode Node.js!** 🎉
 > curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 > ```
 
+## 🚨 **Problemas Comuns e Soluções**
+
+### **Problema: PowerShell cria pasta `-p`**
+
+❌ **Comando antigo** (criava pasta `-p`):
+
+```bash
+mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul
+```
+
+✅ **Solução**: Usar apenas `curl` direto (pasta `.infra` criada automaticamente):
+
+```bash
+curl -sSL https://url -o .infra/arquivo.js
+```
+
+### **Problema: ES Modules (`"type": "module"`)**
+
+❌ **Erro comum**:
+
+```
+Error [ERR_REQUIRE_ESM]: require() of ES modules is not supported
+```
+
+✅ **Solução**: Auto-setup detecta e usa extensão `.cjs`:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+```
+
 ### **Setup Inicial (Primeira vez)**
 
 ```bash
@@ -65,7 +95,7 @@ Para desenvolvimento profissional com todas as funcionalidades:
 ```json
 {
   "scripts": {
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.js && node .infra/setup-cross-platform.js",
     "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
     "infra:setup:force": "node .infra/setup-cross-platform.js --force --auto",
     "infra:up": "node .infra/docker-helper.js up",
@@ -94,7 +124,7 @@ Para ambientes automatizados e produção:
 ```json
 {
   "scripts": {
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.js && node .infra/setup-cross-platform.js",
     "infra:setup:ci": "node .infra/setup-cross-platform.js --force --auto",
     "infra:setup:test": "node .infra/setup-cross-platform.js --force --db-name=test_db --auto",
     "infra:setup:prod": "node .infra/setup-cross-platform.js --force --db-name=prod_db --db-user=prod_user --db-password=${PROD_DB_PASSWORD}",

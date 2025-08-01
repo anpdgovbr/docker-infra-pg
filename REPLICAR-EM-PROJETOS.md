@@ -8,7 +8,7 @@ Esta infraestrutura é **100% genérica** e se adapta automaticamente ao seu pro
 - ✅ **Detecta dados faltantes** inteligentemente
 - ✅ **Oferece opções flexíveis** (auto, manual, parar)
 - ✅ **Sincroniza automaticamente** seu .env
-- ✅ **Funciona via pipe** (`curl | bash`) ou local
+- ✅ **Funciona via pipe** (`curl | node`) ou local
 - ✅ Funciona com **qualquer projeto ANPD**
 
 ## 🚀 Setup Completo
@@ -31,17 +31,17 @@ DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public" 
 
 ```bash
 # Uma única linha - setup completo!
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 ```
 
 **O que acontece automaticamente:**
 
-- ⚡ **Detecta modo pipe**: Ativa `--force` e `--auto` automaticamente
-- 🔍 **Lê dados existentes**: Preserva tudo que já está no seu .env
-- ⚠️ **Detecta faltantes**: Lista claramente o que precisa (nome, usuário, senha)
-- 🤖 **Gera automaticamente**: Cria dados seguros para o que falta
-- 📂 **Clona infraestrutura**: Para pasta `infra-db/` (sempre padronizado)
-- 🔄 **Sincroniza .env**: Atualiza seu arquivo com dados finais
+- ⚡ **Detecta tipo de projeto**: ES Module ou CommonJS
+- 🔍 **Adiciona scripts necessários**: Todos os comandos `infra:*`
+- ⚠️ **Configura .gitignore**: Ignora pastas `.infra/` e `infra-db/`
+- 🤖 **Cria estrutura**: Pasta `.infra/` para arquivos auxiliares
+- � **Preserva arquivos existentes**: Não sobrescreve scripts existentes
+- 🔄 **Compatibilidade total**: Windows, macOS, Linux
 
 ### 3. **Workflows por Cenário:**
 
