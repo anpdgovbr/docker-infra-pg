@@ -356,15 +356,17 @@ function sleep(seconds) {
 // Função principal
 async function main() {
   const args = process.argv.slice(2)
+  const isForce = args.includes('--force')
 
   try {
     log('🚀 Configurando infraestrutura PostgreSQL (Cross-Platform)', 'green')
     log(`📊 Plataforma detectada: ${os.platform()} ${os.arch()}`, 'blue')
 
-    if (isWindows) {
-      // No Windows, usar comandos Docker diretos
+    // Usar implementação Node.js quando --force é usado (para garantir lógica nova)
+    if (isWindows || isForce) {
+      // Usar comandos Docker diretos (nova implementação)
       log('🔧 Executando configuração...', 'yellow')
-      await executeScript(null, args)
+      await executeDockerCommands(args)
       log('✅ Configuração concluída!', 'green')
     } else {
       // Para macOS e Linux, usar o método original com bash

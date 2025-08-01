@@ -207,6 +207,9 @@ npm run infra:update
 # Debug de configuração (quando há problemas de conexão)
 npm run infra:debug
 
+# Corrigir credenciais (quando container tem credenciais diferentes)
+npm run infra:fix
+
 # Desenvolvimento diário
 npm run db:setup && npm run dev
 
