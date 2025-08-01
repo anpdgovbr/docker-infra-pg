@@ -33,37 +33,36 @@ function isESModuleProject() {
 }
 
 // URLs dos scripts
-const REPO_BASE = 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main'
+const REPO_BASE =
+  'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main'
 
-const SCRIPTS = [
-  'setup-cross-platform.js',
-  'docker-helper.js', 
-  'db-helper.js'
-]
+const SCRIPTS = ['setup-cross-platform.js', 'docker-helper.js', 'db-helper.js']
 
 // Download de um script
 function downloadScript(scriptName, targetPath) {
   return new Promise((resolve, reject) => {
     const url = `${REPO_BASE}/${scriptName}`
-    
-    https.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`HTTP ${response.statusCode}: ${url}`))
-        return
-      }
 
-      let data = ''
-      response.on('data', (chunk) => data += chunk)
-      response.on('end', () => {
-        try {
-          fs.writeFileSync(targetPath, data)
-          log(`✅ Atualizado: ${path.basename(targetPath)}`, 'green')
-          resolve()
-        } catch (error) {
-          reject(error)
+    https
+      .get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}: ${url}`))
+          return
         }
+
+        let data = ''
+        response.on('data', (chunk) => (data += chunk))
+        response.on('end', () => {
+          try {
+            fs.writeFileSync(targetPath, data)
+            log(`✅ Atualizado: ${path.basename(targetPath)}`, 'green')
+            resolve()
+          } catch (error) {
+            reject(error)
+          }
+        })
       })
-    }).on('error', reject)
+      .on('error', reject)
   })
 }
 
@@ -74,7 +73,10 @@ async function main() {
 
     // Verifica se é projeto Node.js
     if (!fs.existsSync('package.json')) {
-      log('❌ Este não é um projeto Node.js (package.json não encontrado)', 'red')
+      log(
+        '❌ Este não é um projeto Node.js (package.json não encontrado)',
+        'red'
+      )
       process.exit(1)
     }
 
@@ -89,13 +91,21 @@ async function main() {
     // Detecta extensão correta
     const isESModule = isESModuleProject()
     const extension = isESModule ? 'cjs' : 'js'
-    
-    log(`📦 Projeto ${isESModule ? 'ES Module' : 'CommonJS'} detectado - usando .${extension}`, 'blue')
+
+    log(
+      `📦 Projeto ${
+        isESModule ? 'ES Module' : 'CommonJS'
+      } detectado - usando .${extension}`,
+      'blue'
+    )
 
     // Baixa cada script
     for (const script of SCRIPTS) {
-      const targetPath = path.join(infraDir, script.replace('.js', `.${extension}`))
-      
+      const targetPath = path.join(
+        infraDir,
+        script.replace('.js', `.${extension}`)
+      )
+
       try {
         await downloadScript(script, targetPath)
       } catch (error) {
@@ -108,13 +118,15 @@ async function main() {
     log('🎉 Todos os scripts foram atualizados!', 'green')
     log('', 'reset')
     log('📋 Scripts atualizados:', 'blue')
-    SCRIPTS.forEach(script => {
+    SCRIPTS.forEach((script) => {
       const fileName = script.replace('.js', `.${extension}`)
       log(`  ✅ .infra/${fileName}`, 'green')
     })
     log('', 'reset')
-    log('💡 Agora você pode usar os comandos com as últimas melhorias!', 'yellow')
-
+    log(
+      '💡 Agora você pode usar os comandos com as últimas melhorias!',
+      'yellow'
+    )
   } catch (error) {
     log(`❌ Erro: ${error.message}`, 'red')
     process.exit(1)
