@@ -7,7 +7,13 @@ Este arquivo contém templates **verdadeiramente cross-platform** que funcionam 
 Agora todos os scripts funcionam em **qualquer OS que rode Node.js!** 🎉
 
 > **⚠️ IMPORTANTE para projetos ES Modules:**  
-> Se seu projeto usa `"type": "module"` no package.json, use nosso **auto-setup** que detecta automaticamente e configura as extensões corretas:
+> Se seu projeto usa `"type": "module"` no package.json, o comando `curl | node` não funciona. Use arquivo temporário:
+>
+> ```bash
+> curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
+> ```
+>
+> Para projetos CommonJS (sem `"type": "module"`):
 >
 > ```bash
 > curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
@@ -40,6 +46,10 @@ Error [ERR_REQUIRE_ESM]: require() of ES modules is not supported
 ✅ **Solução**: Auto-setup detecta e usa extensão `.cjs`:
 
 ```bash
+# Para projetos ES Module, use arquivo temporário:
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
+
+# Para projetos CommonJS (sem "type": "module"):
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 ```
 

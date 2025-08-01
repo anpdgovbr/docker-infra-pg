@@ -41,7 +41,25 @@ curl -sSL url/setup-infra.sh | bash
 ✅ **Novo**: 100% Node.js cross-platform
 
 ```bash
+# Projetos CommonJS (padrão)
 curl -sSL url/auto-setup.js | node
+
+# Projetos ES Module (type: "module")
+curl -sSL url/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
+```
+
+### 4. **Problema `curl | node` em ES Modules**
+
+❌ **Problema**: `curl | node` falha em projetos ES Module
+
+```
+To load an ES module, set "type": "module" in package.json
+```
+
+✅ **Solução**: Usar arquivo temporário com extensão `.cjs`
+
+```bash
+curl -sSL url -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
 ```
 
 ## 🎯 **Status da Documentação**

@@ -31,12 +31,24 @@ Agora funciona perfeitamente em **Windows, macOS e Linux** usando Node.js! 🎉
 
 Um comando que configura tudo automaticamente:
 
+**Para projetos CommonJS (padrão):**
+
 ```bash
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 ```
 
-**🎯 Para projetos ES Module (type: "module"):**
-O auto-setup detecta automaticamente e configura arquivos `.cjs` para compatibilidade.
+**Para projetos ES Module (`"type": "module"`):**
+
+```bash
+# Windows (PowerShell/CMD)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
+
+# macOS/Linux
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && rm temp-setup.cjs
+```
+
+**🎯 O que faz automaticamente:**
+O auto-setup detecta o tipo do projeto e configura arquivos `.cjs` para compatibilidade.
 
 Isso irá:
 
