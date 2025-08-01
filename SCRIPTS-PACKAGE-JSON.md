@@ -4,22 +4,44 @@ Este arquivo contém templates **verdadeiramente cross-platform** que funcionam 
 
 ## 🌍 **NOVIDADE: Scripts Cross-Platform**
 
-Agora todos os scripts funcionam em **qualquer plataforma** usando Node.js! 🎉
+Agora todos os scripts funcionam em **qualqu### **Setup Inicial (Primeira vez)\*\*
 
-## 🎯 Scripts Básicos (Mínimo Necessário)
+```bash
+npm run infra:setup      # Baixa helpers + configura infraestrutura
+npm run dev              # Inicia desenvolvimento (inclui infra:db:init)
+```
 
-Para projetos simples que só precisam do essencial:
+### **Desenvolvimento Diário**
+
+```bash
+npm run infra:up         # Só subir banco (se já configurado)
+npm run dev              # Desenvolvimento (já inclui banco)
+```
+
+### **Reset Completo**
+
+````bash
+npm run infra:db:fresh   # Reset banco + migrations + seed
+npm run dev              # Desenvolvimento
+```do Node.js! 🎉
+
+## **🎯 Templates Recomendados por Cenário**
+
+### **1. Projeto Basic (Mínimo essencial)**
 
 ```json
 {
   "scripts": {
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup": "curl -fsSL https://raw.githubusercontent.com/seu-usuario/docker-infra-pg/main/setup-cross-platform.js | node",
     "infra:up": "node .infra/docker-helper.js up",
     "infra:down": "node .infra/docker-helper.js down",
-    "infra:db:init": "node .infra/db-helper.js setup"
+    "infra:logs": "node .infra/docker-helper.js logs",
+    "infra:reset": "node .infra/docker-helper.js reset",
+    "dev": "npm run infra:up && npm run start:dev",
+    "start:dev": "nodemon src/index.js"
   }
 }
-```
+````
 
 **💡 Ainda mais fácil:** Use o auto-setup
 
@@ -34,24 +56,23 @@ Para desenvolvimento profissional com todas as funcionalidades:
 ```json
 {
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:setup:manual": "node setup-cross-platform.js --manual",
-    "infra:setup:force": "node setup-cross-platform.js --force --auto",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "infra:logs": "node docker-helper.js logs",
-    "infra:reset": "node docker-helper.js reset",
-    "infra:clean": "node docker-helper.js clean",
-    "infra:psql": "node docker-helper.js psql",
-    "infra:status": "node docker-helper.js status",
-    "infra:backup": "node docker-helper.js backup",
-    "infra:db:init": "node db-helper.js setup",
-    "infra:db:fresh": "node db-helper.js fresh",
-    "infra:db:migrate": "node db-helper.js migrate",
-    "infra:db:seed": "node db-helper.js seed",
-    "infra:db:studio": "node db-helper.js studio",
-    "infra:db:reset": "node db-helper.js reset",
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
+    "infra:setup:force": "node .infra/setup-cross-platform.js --force --auto",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:logs": "node .infra/docker-helper.js logs",
+    "infra:reset": "node .infra/docker-helper.js reset",
+    "infra:clean": "node .infra/docker-helper.js clean",
+    "infra:psql": "node .infra/docker-helper.js psql",
+    "infra:status": "node .infra/docker-helper.js status",
+    "infra:backup": "node .infra/docker-helper.js backup",
+    "infra:db:init": "node .infra/db-helper.js setup",
+    "infra:db:fresh": "node .infra/db-helper.js fresh",
+    "infra:db:migrate": "node .infra/db-helper.js migrate",
+    "infra:db:seed": "node .infra/db-helper.js seed",
+    "infra:db:studio": "node .infra/db-helper.js studio",
+    "infra:db:reset": "node .infra/db-helper.js reset",
     "dev": "npm run infra:db:init && next dev"
   }
 }
@@ -64,21 +85,20 @@ Para ambientes automatizados e produção:
 ```json
 {
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:setup:ci": "node setup-cross-platform.js --force --auto",
-    "infra:setup:test": "node setup-cross-platform.js --force --db-name=test_db --auto",
-    "infra:setup:prod": "node setup-cross-platform.js --force --db-name=prod_db --db-user=prod_user --db-password=${PROD_DB_PASSWORD}",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "infra:logs": "node docker-helper.js logs",
-    "infra:reset": "node docker-helper.js reset",
-    "infra:backup": "node docker-helper.js backup",
-    "infra:restore": "node docker-helper.js restore",
-    "infra:db:init": "node db-helper.js setup",
-    "infra:db:fresh": "node db-helper.js fresh",
-    "infra:db:migrate": "node db-helper.js migrate",
-    "infra:db:seed": "node db-helper.js seed",
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup:ci": "node .infra/setup-cross-platform.js --force --auto",
+    "infra:setup:test": "node .infra/setup-cross-platform.js --force --db-name=test_db --auto",
+    "infra:setup:prod": "node .infra/setup-cross-platform.js --force --db-name=prod_db --db-user=prod_user --db-password=${PROD_DB_PASSWORD}",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:logs": "node .infra/docker-helper.js logs",
+    "infra:reset": "node .infra/docker-helper.js reset",
+    "infra:backup": "node .infra/docker-helper.js backup",
+    "infra:restore": "node .infra/docker-helper.js restore",
+    "infra:db:init": "node .infra/db-helper.js setup",
+    "infra:db:fresh": "node .infra/db-helper.js fresh",
+    "infra:db:migrate": "node .infra/db-helper.js migrate",
+    "infra:db:seed": "node .infra/db-helper.js seed",
     "test:integration": "npm run infra:setup:test && npm run test",
     "build:prod": "npm run infra:setup:prod && npm run build"
   }
@@ -93,23 +113,22 @@ Para projetos Next.js com Prisma (mais comum na ANPD):
 {
   "name": "@anpdgovbr/meu-projeto",
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
     "dev": "npm run infra:db:init && next dev",
     "build": "next build",
     "start": "next start",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:setup:manual": "node setup-cross-platform.js --manual",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "infra:logs": "node docker-helper.js logs",
-    "infra:reset": "node docker-helper.js reset",
-    "infra:clean": "node docker-helper.js clean",
-    "infra:db:init": "node db-helper.js setup",
-    "infra:db:fresh": "node db-helper.js fresh",
-    "infra:db:migrate": "node db-helper.js migrate",
-    "infra:db:seed": "node db-helper.js seed",
-    "infra:db:studio": "node db-helper.js studio",
-    "infra:db:reset": "node db-helper.js reset",
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:logs": "node .infra/docker-helper.js logs",
+    "infra:reset": "node .infra/docker-helper.js reset",
+    "infra:clean": "node .infra/docker-helper.js clean",
+    "infra:db:init": "node .infra/db-helper.js setup",
+    "infra:db:fresh": "node .infra/db-helper.js fresh",
+    "infra:db:migrate": "node .infra/db-helper.js migrate",
+    "infra:db:seed": "node .infra/db-helper.js seed",
+    "infra:db:studio": "node .infra/db-helper.js studio",
+    "infra:db:reset": "node .infra/db-helper.js reset",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:seed": "npx prisma db seed",
     "prisma:studio": "npx prisma studio",
@@ -126,19 +145,18 @@ Para APIs e backends:
 {
   "name": "@anpdgovbr/minha-api",
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
     "dev": "npm run infra:db:init && nodemon src/server.js",
     "start": "node src/server.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "infra:logs": "node docker-helper.js logs",
-    "infra:reset": "node docker-helper.js reset",
-    "infra:db:init": "node db-helper.js setup",
-    "infra:db:fresh": "node db-helper.js fresh",
-    "infra:db:migrate": "node db-helper.js migrate",
-    "infra:db:seed": "node db-helper.js seed",
-    "infra:db:studio": "node db-helper.js studio",
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:logs": "node .infra/docker-helper.js logs",
+    "infra:reset": "node .infra/docker-helper.js reset",
+    "infra:db:init": "node .infra/db-helper.js setup",
+    "infra:db:fresh": "node .infra/db-helper.js fresh",
+    "infra:db:migrate": "node .infra/db-helper.js migrate",
+    "infra:db:seed": "node .infra/db-helper.js seed",
+    "infra:db:studio": "node .infra/db-helper.js studio",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:integration": "npm run infra:setup:test && npm run test"
@@ -153,12 +171,11 @@ Para projetos com pipeline automatizado:
 ```json
 {
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:setup:ci": "node setup-cross-platform.js --force --auto",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "infra:db:init": "node db-helper.js setup",
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup:ci": "node .infra/setup-cross-platform.js --force --auto",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:db:init": "node .infra/db-helper.js setup",
     "infra:db:init:ci": "npm run infra:setup:ci && npm run infra:db:init",
     "test": "jest",
     "test:ci": "npm run infra:db:init:ci && npm run test",
@@ -189,19 +206,19 @@ Para projetos como `@anpdgovbr/backlog-dim` que já têm scripts estabelecidos:
     "db:reset": "npx prisma migrate reset --force",
     "db:seed": "npx tsx prisma/seed.ts",
 
-    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js && node setup-cross-platform.js",
-    "infra:setup:manual": "node setup-cross-platform.js --manual",
-    "infra:setup:force": "node setup-cross-platform.js --force --auto",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "infra:logs": "node docker-helper.js logs",
-    "infra:reset": "node docker-helper.js reset",
-    "infra:clean": "node docker-helper.js clean",
-    "infra:psql": "node docker-helper.js psql",
-    "infra:status": "node docker-helper.js status",
-    "infra:backup": "node docker-helper.js backup",
-    "infra:db:init": "node db-helper.js setup",
-    "infra:db:fresh": "node db-helper.js fresh"
+    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
+    "infra:setup:force": "node .infra/setup-cross-platform.js --force --auto",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:logs": "node .infra/docker-helper.js logs",
+    "infra:reset": "node .infra/docker-helper.js reset",
+    "infra:clean": "node .infra/docker-helper.js clean",
+    "infra:psql": "node .infra/docker-helper.js psql",
+    "infra:status": "node .infra/docker-helper.js status",
+    "infra:backup": "node .infra/docker-helper.js backup",
+    "infra:db:init": "node .infra/db-helper.js setup",
+    "infra:db:fresh": "node .infra/db-helper.js fresh"
   }
 }
 ```
@@ -262,6 +279,13 @@ npm run prisma:migrate
 - Mensagens claras em português
 - Verificações de pré-requisitos
 - Logs coloridos e informativos
+
+### ✅ **Organização de Arquivos**
+
+- Helpers ficam na pasta `.infra/` (ignorada pelo Git)
+- Infraestrutura fica na pasta `infra-db/` (ignorada pelo Git)
+- Projeto principal permanece limpo
+- Fácil remoção: apenas delete as pastas `.infra/` e `infra-db/`
 
 ````
 
@@ -328,22 +352,22 @@ Você pode usar os helpers diretamente no terminal:
 
 ```bash
 # Setup da infraestrutura
-node setup-cross-platform.js --force --auto
+node .infra/setup-cross-platform.js --force --auto
 
 # Comandos Docker
-node docker-helper.js up
-node docker-helper.js down
-node docker-helper.js logs
-node docker-helper.js reset
-node docker-helper.js psql
-node docker-helper.js backup
+node .infra/docker-helper.js up
+node .infra/docker-helper.js down
+node .infra/docker-helper.js logs
+node .infra/docker-helper.js reset
+node .infra/docker-helper.js psql
+node .infra/docker-helper.js backup
 
 # Comandos de Banco
-node db-helper.js setup
-node db-helper.js fresh
-node db-helper.js migrate
-node db-helper.js seed
-node db-helper.js studio
+node .infra/db-helper.js setup
+node .infra/db-helper.js fresh
+node .infra/db-helper.js migrate
+node .infra/db-helper.js seed
+node .infra/db-helper.js studio
 ```
 
 ### **Download Manual dos Helpers:**
@@ -351,15 +375,19 @@ node db-helper.js studio
 Se preferir baixar os helpers manualmente:
 
 ```bash
+# Criar pasta .infra
+mkdir -p .infra    # Unix/macOS
+mkdir .infra       # Windows
+
 # Windows PowerShell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js" -OutFile "setup-cross-platform.js"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js" -OutFile "docker-helper.js"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js" -OutFile "db-helper.js"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js" -OutFile ".infra/setup-cross-platform.js"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js" -OutFile ".infra/docker-helper.js"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js" -OutFile ".infra/db-helper.js"
 
 # macOS/Linux
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js
 ```
 
 ### **Customizar para seu projeto:**
@@ -367,7 +395,7 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-he
 1. **Altere o nome do banco:**
 
 ```bash
-./setup-infra.sh --force --db-name=meu_projeto_especifico
+node .infra/setup-cross-platform.js --force --db-name=meu_projeto_especifico
 ```
 
 2. **Use variáveis de ambiente:**
@@ -375,7 +403,7 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-he
 ```json
 {
   "scripts": {
-    "infra:setup:prod": "curl -sSL https://raw.../setup-infra.sh | bash -s -- --force --db-name=$PROJECT_NAME --db-user=$DB_USER --db-password=$DB_PASSWORD"
+    "infra:setup:prod": "node .infra/setup-cross-platform.js --force --db-name=$PROJECT_NAME --db-user=$DB_USER --db-password=$DB_PASSWORD"
   }
 }
 ```
@@ -385,8 +413,8 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-he
 ```json
 {
   "scripts": {
-    "predev": "npm run db:setup",
-    "prebuild": "npm run prisma:migrate"
+    "predev": "npm run infra:db:init",
+    "prebuild": "npm run infra:db:migrate"
   }
 }
 ```
@@ -396,8 +424,8 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-he
 ```json
 {
   "scripts": {
-    "dev:full": "npm run db:setup && concurrently \"npm run dev\" \"npm run prisma:studio\"",
-    "test:full": "npm run db:fresh && npm run test && npm run test:e2e"
+    "dev:full": "npm run infra:db:init && concurrently \"npm run dev\" \"npm run infra:db:studio\"",
+    "test:full": "npm run infra:db:fresh && npm run test && npm run test:e2e"
   }
 }
 ```

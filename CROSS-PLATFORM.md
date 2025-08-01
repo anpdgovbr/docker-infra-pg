@@ -1,6 +1,23 @@
 # 🌍 Cross-Platform Helpers
 
-Scripts Node.js que funcionam perfeitamente em **Windows, macOS e Linux**.
+Scripts Node.```bash
+
+# Comandos principais
+
+node .infra/docker-helper.js up # Subir infraestrutura
+node .infra/docker-helper.js down # Parar infraestrutura
+node .infra/docker-helper.js logs # Ver logs
+node .infra/docker-helper.js status # Status dos containers
+
+# Comandos avançados
+
+node .infra/docker-helper.js reset # Reset completo
+node .infra/docker-helper.js clean # Remover tudo
+node .infra/docker-helper.js psql # Conectar ao PostgreSQL
+node .infra/docker-helper.js backup # Criar backup
+node .infra/docker-helper.js restore backup.sql # Restaurar backup
+
+````am perfeitamente em **Windows, macOS e Linux**.
 
 ## 🚀 Por que Cross-Platform?
 
@@ -20,13 +37,16 @@ Agora temos **3 helpers** que resolvem todos os problemas:
 ### 1. `setup-cross-platform.js` - Setup da Infraestrutura
 
 ```bash
+```bash
 # Básico
-node setup-cross-platform.js
+node .infra/setup-cross-platform.js
 
-# Com parâmetros
-node setup-cross-platform.js --force --auto
-node setup-cross-platform.js --db-name=meuapp --db-user=admin
-```
+# Com opções
+node .infra/setup-cross-platform.js --force --auto
+node .infra/setup-cross-platform.js --db-name=meuapp --db-user=admin
+````
+
+````
 
 **Funcionalidades:**
 
@@ -40,18 +60,18 @@ node setup-cross-platform.js --db-name=meuapp --db-user=admin
 
 ```bash
 # Comandos básicos
-node docker-helper.js up          # Subir infraestrutura
-node docker-helper.js down        # Parar infraestrutura
-node docker-helper.js logs        # Ver logs
-node docker-helper.js status      # Status dos containers
+node .infra/docker-helper.js up          # Subir infraestrutura
+node .infra/docker-helper.js down        # Parar infraestrutura
+node .infra/docker-helper.js logs        # Ver logs
+node .infra/docker-helper.js status      # Status dos containers
 
 # Comandos avançados
-node docker-helper.js reset       # Reset completo
-node docker-helper.js clean       # Remover tudo
-node docker-helper.js psql        # Conectar ao PostgreSQL
-node docker-helper.js backup      # Criar backup
-node docker-helper.js restore backup.sql  # Restaurar backup
-```
+node .infra/docker-helper.js reset       # Reset completo
+node .infra/docker-helper.js clean       # Remover tudo
+node .infra/docker-helper.js psql        # Conectar ao PostgreSQL
+node .infra/docker-helper.js backup      # Criar backup
+node .infra/docker-helper.js restore backup.sql  # Restaurar backup
+````
 
 **Funcionalidades:**
 
@@ -63,18 +83,20 @@ node docker-helper.js restore backup.sql  # Restaurar backup
 
 ### 3. `db-helper.js` - Comandos de Banco
 
+````bash
 ```bash
-# Setup e migrações
-node db-helper.js setup           # Setup completo (up + migrate + seed)
-node db-helper.js fresh           # Reset completo + setup
-node db-helper.js migrate         # Apenas migrações
-node db-helper.js seed            # Apenas seed
+# Comandos de setup
+node .infra/db-helper.js setup           # Setup completo (up + migrate + seed)
+node .infra/db-helper.js fresh           # Reset completo + setup
+node .infra/db-helper.js migrate         # Apenas migrações
+node .infra/db-helper.js seed            # Apenas seed
 
-# Prisma
-node db-helper.js studio          # Abrir Prisma Studio
-node db-helper.js reset           # Reset migrações Prisma
-node db-helper.js generate        # Gerar cliente Prisma
-```
+# Comandos Prisma (se detectado)
+node .infra/db-helper.js studio          # Abrir Prisma Studio
+node .infra/db-helper.js reset           # Reset migrações Prisma
+````
+
+````
 
 **Funcionalidades:**
 
@@ -93,13 +115,13 @@ Adicione ao seu `package.json`:
 ```json
 {
   "scripts": {
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:up": "node docker-helper.js up",
-    "db:setup": "node db-helper.js setup"
+    "postinstall": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js",
+    "infra:setup": "node .infra/setup-cross-platform.js",
+    "infra:up": "node .infra/docker-helper.js up",
+    "db:setup": "node .infra/db-helper.js setup"
   }
 }
-```
+````
 
 Depois execute:
 
@@ -113,17 +135,19 @@ npm run infra:setup  # Configura a infraestrutura
 #### Windows PowerShell:
 
 ```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js" -OutFile "setup-cross-platform.js"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js" -OutFile "docker-helper.js"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js" -OutFile "db-helper.js"
+mkdir .infra -Force
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js" -OutFile ".infra/setup-cross-platform.js"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js" -OutFile ".infra/docker-helper.js"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js" -OutFile ".infra/db-helper.js"
 ```
 
 #### macOS/Linux:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js
+mkdir -p .infra
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js
 ```
 
 ## 🔧 Detecção de Plataforma

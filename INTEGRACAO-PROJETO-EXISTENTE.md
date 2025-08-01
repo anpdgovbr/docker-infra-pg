@@ -72,14 +72,14 @@ Helpers baixados automaticamente no `npm install`:
   "scripts": {
     // ... todos os seus scripts existentes ficam iguais ...
 
-    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
-    "infra:setup": "node setup-cross-platform.js",
-    "infra:setup:manual": "node setup-cross-platform.js --manual",
-    "infra:up": "node docker-helper.js up",
-    "infra:down": "node docker-helper.js down",
-    "infra:logs": "node docker-helper.js logs",
-    "infra:psql": "node docker-helper.js psql",
-    "infra:db:init": "node db-helper.js setup"
+    "postinstall": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js",
+    "infra:setup": "node .infra/setup-cross-platform.js",
+    "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
+    "infra:up": "node .infra/docker-helper.js up",
+    "infra:down": "node .infra/docker-helper.js down",
+    "infra:logs": "node .infra/docker-helper.js logs",
+    "infra:psql": "node .infra/docker-helper.js psql",
+    "infra:db:init": "node .infra/db-helper.js setup"
   }
 }
 ```
