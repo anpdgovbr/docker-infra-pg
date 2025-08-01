@@ -4,8 +4,71 @@
 # ============================================================================
 # Use este script para clonar e configurar a infraestrutura PostgreSQL
 # baseada nas variáveis de ambiente do seu projeto
+#
+# Parâmetros:
+#   --force               : Sobrescrever infra-db sem perguntar
+#   --auto                : Gerar dados faltantes automaticamente
+#   --manual              : Pedir dados faltantes via prompt
+#   --db-name=NOME        : Nome do banco
+#   --db-user=USER        : Usuário do banco
+#   --db-password=PASS    : Senha do banco
 
 set -e
+
+# Valores padrão
+FORCE_OVERWRITE=false
+AUTO_MODE=false
+MANUAL_MODE=false
+PARAM_DB_NAME=""
+PARAM_DB_USER=""
+PARAM_DB_PASSWORD=""
+
+# Processar parâmetros
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --force)
+            FORCE_OVERWRITE=true
+            shift
+            ;;
+        --auto)
+            AUTO_MODE=true
+            shift
+            ;;
+        --manual)
+            MANUAL_MODE=true
+            shift
+            ;;
+        --db-name=*)
+            PARAM_DB_NAME="${1#*=}"
+            shift
+            ;;
+        --db-user=*)
+            PARAM_DB_USER="${1#*=}"
+            shift
+            ;;
+        --db-password=*)
+            PARAM_DB_PASSWORD="${1#*=}"
+            shift
+            ;;
+        --help|-h)
+            echo "Uso: $0 [opções]"
+            echo "Opções:"
+            echo "  --force               Sobrescrever infra-db sem perguntar"
+            echo "  --auto                Gerar dados faltantes automaticamente"
+            echo "  --manual              Pedir dados faltantes via prompt"
+            echo "  --db-name=NOME        Nome do banco"
+            echo "  --db-user=USER        Usuário do banco"
+            echo "  --db-password=PASS    Senha do banco"
+            echo "  --help, -h            Mostrar esta ajuda"
+            exit 0
+            ;;
+        *)
+            echo "Parâmetro desconhecido: $1"
+            echo "Use --help para ver as opções disponíveis"
+            exit 1
+            ;;
+    esac
+done
 
 echo "🚀 Configurando infraestrutura PostgreSQL para sua aplicação..."
 echo
@@ -23,14 +86,30 @@ INFRA_DIR="infra-db"  # Nome padronizado para a pasta local (sempre infra-db)
 
 # Verificar se já existe pasta da infraestrutura
 if [[ -d "$INFRA_DIR" ]]; then
-    echo "⚠️  Diretório $INFRA_DIR já existe"
-    read -p "Deseja sobrescrever? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ "$FORCE_OVERWRITE" == "true" ]]; then
+        echo "🔄 Sobrescrevendo diretório $INFRA_DIR existente (--force)..."
         rm -rf "$INFRA_DIR"
     else
-        echo "❌ Operação cancelada"
-        exit 0
+        echo "⚠️  Diretório $INFRA_DIR já existe"
+        echo "Opções:"
+        echo "1) Sobrescrever e continuar"
+        echo "2) Parar execução"
+        echo
+        read -p "Escolha uma opção (1-2): " -n 1 -r OVERWRITE_CHOICE
+        echo
+        echo
+        
+        case $OVERWRITE_CHOICE in
+            1)
+                echo "🔄 Sobrescrevendo diretório existente..."
+                rm -rf "$INFRA_DIR"
+                ;;
+            2|*)
+                echo "❌ Execução interrompida pelo usuário"
+                echo "💡 Dica: Use --force para sobrescrever automaticamente"
+                exit 0
+                ;;
+        esac
     fi
 fi
 
@@ -62,8 +141,8 @@ echo "🔍 Lendo configurações existentes do projeto..."
 APP_NAME=$(node -p "require('./package.json').name" 2>/dev/null | sed 's/@[^/]*\///g' || echo "minha-app")
 
 # Ler TODAS as configurações existentes do .env (priorizando dados reais)
-DB_NAME_EXISTING=$(grep "^POSTGRES_DB=" .env | cut -d'=' -f2 | tr -d '"' 2>/dev/null || echo "")
-DATABASE_URL_EXISTING=$(grep "^DATABASE_URL=" .env | cut -d'=' -f2 | tr -d '"' 2>/dev/null || echo "")
+DB_NAME_EXISTING=$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || echo "")
+DATABASE_URL_EXISTING=$(grep "^DATABASE_URL=" .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' || echo "")
 
 # Se DATABASE_URL existe, extrair informações dela
 DB_USER_FROM_URL=""
@@ -76,52 +155,63 @@ if [[ -n "$DATABASE_URL_EXISTING" && "$DATABASE_URL_EXISTING" != *"user:password
     DB_NAME_FROM_URL=$(echo "$DATABASE_URL_EXISTING" | sed -n 's/.*\/\([^?]*\).*/\1/p')
 fi
 
-# Definir valores finais priorizando dados existentes
-DB_NAME="${DB_NAME_EXISTING:-${DB_NAME_FROM_URL:-${APP_NAME}_dev}}"
-DB_USER="${DB_USER_FROM_URL:-${APP_NAME}_user_db}"
-DB_PASSWORD="${DB_PASSWORD_FROM_URL}"
+# Definir valores finais priorizando: parâmetros > dados existentes > padrões
+DB_NAME="${PARAM_DB_NAME:-${DB_NAME_EXISTING:-${DB_NAME_FROM_URL:-${APP_NAME}_dev}}}"
+DB_USER="${PARAM_DB_USER:-${DB_USER_FROM_URL:-${APP_NAME}_user_db}}"
+DB_PASSWORD="${PARAM_DB_PASSWORD:-${DB_PASSWORD_FROM_URL}}"
 
-# Verificar quais dados estão faltando
+# Verificar quais dados estão faltando ou vazios
 MISSING_VARS=()
-[[ -z "$DB_NAME" ]] && MISSING_VARS+=("POSTGRES_DB ou nome do banco na DATABASE_URL")
-[[ -z "$DB_USER" ]] && MISSING_VARS+=("usuário do banco")
-[[ -z "$DB_PASSWORD" ]] && MISSING_VARS+=("senha do banco")
+[[ -z "$DB_NAME" || "$DB_NAME" == "" ]] && MISSING_VARS+=("POSTGRES_DB ou nome do banco na DATABASE_URL")
+[[ -z "$DB_USER" || "$DB_USER" == "" ]] && MISSING_VARS+=("usuário do banco")
+[[ -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && MISSING_VARS+=("senha do banco")
 
 # Se houver dados faltando, oferecer opções
 if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
-    echo "⚠️  Algumas configurações de banco não foram encontradas no .env:"
+    echo "⚠️  As seguintes configurações de banco estão faltando ou vazias no .env:"
     for var in "${MISSING_VARS[@]}"; do
         echo "   - $var"
     done
     echo
-    echo "🤔 Como deseja proceder?"
-    echo "1) Gerar automaticamente os dados faltantes"
-    echo "2) Informar os dados manualmente agora"
-    echo "3) Parar e ajustar o .env manualmente (recomendado para projetos existentes)"
-    echo
-    read -p "Escolha uma opção (1-3): " -n 1 -r CHOICE
-    echo
-    echo
+    
+    # Determinar modo de operação
+    if [[ "$AUTO_MODE" == "true" ]]; then
+        CHOICE="1"
+        echo "� Modo automático ativado (--auto), gerando dados faltantes..."
+    elif [[ "$MANUAL_MODE" == "true" ]]; then
+        CHOICE="2"
+        echo "✏️  Modo manual ativado (--manual), solicitando dados..."
+    else
+        echo "�🤔 Como deseja proceder?"
+        echo "1) Gerar automaticamente os dados faltantes"
+        echo "2) Informar os dados manualmente agora"
+        echo "3) Parar e ajustar o .env manualmente (recomendado para projetos existentes)"
+        echo
+        read -p "Escolha uma opção (1-3): " -n 1 -r CHOICE
+        echo
+        echo
+    fi
     
     case $CHOICE in
         1)
             echo "🤖 Gerando dados automaticamente..."
-            [[ -z "$DB_NAME" ]] && DB_NAME="${APP_NAME}_dev"
-            [[ -z "$DB_USER" ]] && DB_USER="${APP_NAME}_user_db"
-            [[ -z "$DB_PASSWORD" ]] && DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16)
+            [[ -z "$DB_NAME" || "$DB_NAME" == "" ]] && DB_NAME="${APP_NAME}_dev"
+            [[ -z "$DB_USER" || "$DB_USER" == "" ]] && DB_USER="${APP_NAME}_user_db"
+            [[ -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16)
             ;;
         2)
             echo "✏️  Informe os dados faltantes:"
-            [[ -z "$DB_NAME" ]] && { read -p "Nome do banco (padrão: ${APP_NAME}_dev): " input; DB_NAME="${input:-${APP_NAME}_dev}"; }
-            [[ -z "$DB_USER" ]] && { read -p "Usuário do banco (padrão: ${APP_NAME}_user_db): " input; DB_USER="${input:-${APP_NAME}_user_db}"; }
-            [[ -z "$DB_PASSWORD" ]] && { read -p "Senha do banco: " DB_PASSWORD; [[ -z "$DB_PASSWORD" ]] && DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16); }
+            [[ -z "$DB_NAME" || "$DB_NAME" == "" ]] && { read -p "Nome do banco (padrão: ${APP_NAME}_dev): " input; DB_NAME="${input:-${APP_NAME}_dev}"; }
+            [[ -z "$DB_USER" || "$DB_USER" == "" ]] && { read -p "Usuário do banco (padrão: ${APP_NAME}_user_db): " input; DB_USER="${input:-${APP_NAME}_user_db}"; }
+            [[ -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && { read -p "Senha do banco: " DB_PASSWORD; [[ -z "$DB_PASSWORD" ]] && DB_PASSWORD=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-16); }
             ;;
         3)
             echo "📝 Ajuste manualmente as seguintes variáveis no seu .env:"
-            [[ -z "$DB_NAME" ]] && echo "   POSTGRES_DB=${APP_NAME}_dev"
-            [[ -z "$DB_USER" || -z "$DB_PASSWORD" ]] && echo "   DATABASE_URL=\"postgresql://usuario:senha@localhost:5432/banco?schema=public\""
+            [[ -z "$DB_NAME" || "$DB_NAME" == "" ]] && echo "   POSTGRES_DB=${APP_NAME}_dev"
+            [[ -z "$DB_USER" || "$DB_USER" == "" || -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && echo "   DATABASE_URL=\"postgresql://usuario:senha@localhost:5432/banco?schema=public\""
             echo
             echo "Execute este script novamente após os ajustes."
+            echo "💡 Dica: Use --auto para gerar automaticamente ou --manual para informar via prompt"
             exit 0
             ;;
         *)
@@ -201,4 +291,8 @@ echo
 echo "🔌 String de conexão final (já salva no seu .env):"
 echo "DATABASE_URL=\"$NEW_DATABASE_URL\""
 echo
-echo "🔒 Segurança: Dados existentes preservados, apenas complementados quando necessário"
+echo "� Automação: Para execução não-interativa, use:"
+echo "   $0 --force --auto"
+echo "   $0 --force --db-name=meudb --db-user=meuuser --db-password=minhasenha"
+echo
+echo "�🔒 Segurança: Dados existentes preservados, apenas complementados quando necessário"
