@@ -105,6 +105,32 @@ async function executeDockerCommands(args = []) {
       log('✅ Pasta infra-db criada', 'green')
     }
 
+    // Verifica se já existe configuração e se deve sobrescrever
+    const dockerComposePath = path.join(infraDbPath, 'docker-compose.yml')
+    const infraEnvPath = path.join(infraDbPath, '.env')
+
+    if (
+      !isForce &&
+      (fs.existsSync(dockerComposePath) || fs.existsSync(infraEnvPath))
+    ) {
+      log(
+        '⚠️  Infraestrutura já existe. Use --force para sobrescrever',
+        'yellow'
+      )
+      return
+    }
+
+    // Função para gerar senha segura
+    const generateSecurePassword = () => {
+      const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+      let password = ''
+      for (let i = 0; i < 16; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      return password
+    }
+
     // Lê .env do projeto para detectar valores existentes
     const projectEnvPath = path.join(process.cwd(), '.env')
     let existingEnvVars = {}
@@ -127,10 +153,11 @@ async function executeDockerCommands(args = []) {
       .replace(/-/g, '_')
     let dbName = existingEnvVars.POSTGRES_DB || `${projectName}_dev`
     let dbUser = existingEnvVars.POSTGRES_USER || 'dev_user'
-    let dbPassword = existingEnvVars.POSTGRES_PASSWORD || 'dev_password'
+    let dbPassword =
+      existingEnvVars.POSTGRES_PASSWORD || generateSecurePassword()
 
     // Modo manual: perguntar ao usuário
-    if (isManual && !isAuto) {
+    if (isManual) {
       const readline = require('readline')
       const rl = readline.createInterface({
         input: process.stdin,
@@ -159,12 +186,19 @@ async function executeDockerCommands(args = []) {
       rl.close()
 
       log('\n✅ Configuração manual concluída!', 'green')
+    } else if (isAuto) {
+      // Modo automático: usar valores calculados (com senha segura)
+      log('🤖 Modo automático - usando valores padrão com senha segura', 'blue')
     } else {
-      // Modo automático
+      // Modo padrão: detecta se já tem configuração
       if (!isForce && !existingEnvVars.POSTGRES_DB) {
         log(
-          '⚠️  Usando valores padrão. Use --manual para configurar ou --force para continuar',
+          '⚠️  Primeira configuração detectada. Use --manual para configurar interativamente ou --auto para usar padrões',
           'yellow'
+        )
+        log(
+          '💡 Usando valores padrão com senha segura gerada automaticamente',
+          'blue'
         )
       }
     }
@@ -178,7 +212,7 @@ services:
     environment:
       POSTGRES_DB: \${POSTGRES_DB:-${dbName}}
       POSTGRES_USER: \${POSTGRES_USER:-${dbUser}}
-      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-${dbPassword}}
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -194,7 +228,6 @@ networks:
     driver: bridge
 `
 
-    const dockerComposePath = path.join(infraDbPath, 'docker-compose.yml')
     fs.writeFileSync(dockerComposePath, dockerComposeContent)
     log('✅ docker-compose.yml criado', 'green')
 
@@ -208,7 +241,6 @@ POSTGRES_PORT=5432
 DATABASE_URL="postgresql://${dbUser}:${dbPassword}@localhost:5432/${dbName}"
 `
 
-    const infraEnvPath = path.join(infraDbPath, '.env')
     fs.writeFileSync(infraEnvPath, infraEnvContent)
     log('✅ .env da infraestrutura criado', 'green')
 
