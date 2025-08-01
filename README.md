@@ -122,6 +122,34 @@ Seu projeto deve ter:
 
 > **💡 Nota:** A pasta local sempre será `infra-db/` independente do nome do repositório, garantindo que todos os comandos funcionem consistentemente em qualquer projeto.
 
+## 🧠 Atualização Inteligente (NOVO!)
+
+Para projetos já configurados, use a **atualização inteligente** que detecta automaticamente:
+
+- ✅ **Novos scripts** (como `infra:fix`, `infra:debug`)
+- ✅ **Scripts desatualizados** (comandos melhorados)
+- ✅ **Extensões incorretas** (`.js` vs `.cjs` para ES modules)
+- ✅ **Arquivos de infraestrutura** (scripts na pasta `.infra/`)
+
+```bash
+# 🧠 Atualização inteligente completa
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart-update.js | node
+
+# OU apenas scripts (sem atualizar package.json)
+npm run infra:update
+```
+
+**O que a atualização inteligente faz:**
+
+1. **Baixa** a versão mais recente do `update-scripts.js`
+2. **Executa** a atualização com toda inteligência nova
+3. **Adiciona** scripts novos ao `package.json` (como `infra:fix`)
+4. **Atualiza** scripts existentes com melhorias
+5. **Corrige** extensões de arquivo (`.js` ↔ `.cjs`) automaticamente
+6. **Mostra** relatório detalhado do que foi feito
+
+**Perfeito para resolver:** "npm error Missing script: infra:fix"
+
 ## ✅ Resultado
 
 - ✅ PostgreSQL isolado para seu projeto
@@ -201,7 +229,10 @@ npm run infra:setup:manual
 # Setup forçado - regenera tudo (baixa scripts e executa)
 npm run infra:setup:force
 
-# Atualizar scripts (quando há melhorias no repo)
+# 🧠 Atualização Inteligente (NOVO!) - atualiza scripts E package.json
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart-update.js | node
+
+# Atualizar apenas scripts (quando há melhorias no repo)
 npm run infra:update
 
 # Debug de configuração (quando há problemas de conexão)

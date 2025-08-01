@@ -66,8 +66,34 @@ function downloadScript(scriptName, targetPath) {
   })
 }
 
-// Verifica e atualiza package.json se necessário
-async function checkAndUpdatePackageJson(extension) {
+// Gera todos os scripts de infraestrutura
+function generateInfraScripts(extension) {
+  return {
+    'infra:setup': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.${extension} && node .infra/setup-cross-platform.${extension}`,
+    'infra:setup:manual': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.${extension} && node .infra/setup-cross-platform.${extension} --manual`,
+    'infra:setup:force': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.${extension} && node .infra/setup-cross-platform.${extension} --force --auto`,
+    'infra:update': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js -o .infra/update-scripts.${extension} && node .infra/update-scripts.${extension}`,
+    'infra:debug': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/diagnostic.js -o .infra/diagnostic.${extension} && node .infra/diagnostic.${extension}`,
+    'infra:fix': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/fix-credentials.js -o .infra/fix-credentials.${extension} && node .infra/fix-credentials.${extension}`,
+    'infra:up': `node .infra/docker-helper.${extension} up`,
+    'infra:down': `node .infra/docker-helper.${extension} down`,
+    'infra:logs': `node .infra/docker-helper.${extension} logs`,
+    'infra:reset': `node .infra/docker-helper.${extension} reset`,
+    'infra:clean': `node .infra/docker-helper.${extension} clean`,
+    'infra:psql': `node .infra/docker-helper.${extension} psql`,
+    'infra:status': `node .infra/docker-helper.${extension} status`,
+    'infra:backup': `node .infra/docker-helper.${extension} backup`,
+    'infra:db:init': `node .infra/db-helper.${extension} setup`,
+    'infra:db:fresh': `node .infra/db-helper.${extension} fresh`,
+    'infra:db:migrate': `node .infra/db-helper.${extension} migrate`,
+    'infra:db:seed': `node .infra/db-helper.${extension} seed`,
+    'infra:db:studio': `node .infra/db-helper.${extension} studio`,
+    'infra:db:reset': `node .infra/db-helper.${extension} reset`
+  }
+}
+
+// Verifica e atualiza package.json com todos os scripts
+async function updatePackageJsonScripts(extension) {
   try {
     const packageJsonPath = path.join(process.cwd(), 'package.json')
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
@@ -76,60 +102,54 @@ async function checkAndUpdatePackageJson(extension) {
       packageJson.scripts = {}
     }
 
-    // Verifica se tem script infra:update
-    if (!packageJson.scripts['infra:update']) {
-      log('📦 Adicionando script infra:update ao package.json...', 'yellow')
+    // Obtém todos os scripts da infraestrutura mais atuais
+    const currentInfraScripts = generateInfraScripts(extension)
+    let addedCount = 0
+    let updatedCount = 0
 
-      packageJson.scripts[
-        'infra:update'
-      ] = `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js -o .infra/update-scripts.${extension} && node .infra/update-scripts.${extension}`
+    log('🔍 Verificando scripts no package.json...', 'blue')
 
-      // Salva package.json atualizado
-      fs.writeFileSync(
-        packageJsonPath,
-        JSON.stringify(packageJson, null, 2) + '\n'
-      )
-      log('✅ Script infra:update adicionado!', 'green')
-    }
-
-    // Verifica se scripts existentes estão usando extensão correta
-    let scriptsUpdated = 0
-    const infraScripts = Object.keys(packageJson.scripts).filter((key) =>
-      key.startsWith('infra:')
-    )
-
-    for (const scriptKey of infraScripts) {
-      const script = packageJson.scripts[scriptKey]
-      const wrongExtension = extension === 'cjs' ? '.js' : '.cjs'
-      const correctExtension = `.${extension}`
-
-      if (script.includes(`/infra/`) && script.includes(wrongExtension)) {
-        packageJson.scripts[scriptKey] = script.replace(
-          new RegExp(
-            `\\.infra/([^\\s]+)${wrongExtension.replace('.', '\\.')}`,
-            'g'
-          ),
-          `.infra/$1${correctExtension}`
-        )
-        scriptsUpdated++
+    // Adiciona ou atualiza scripts
+    for (const [scriptName, scriptCommand] of Object.entries(
+      currentInfraScripts
+    )) {
+      if (!packageJson.scripts[scriptName]) {
+        // Script novo - adiciona
+        packageJson.scripts[scriptName] = scriptCommand
+        addedCount++
+        log(`➕ Novo script: ${scriptName}`, 'green')
+      } else if (packageJson.scripts[scriptName] !== scriptCommand) {
+        // Script existe mas está desatualizado - atualiza
+        packageJson.scripts[scriptName] = scriptCommand
+        updatedCount++
+        log(`🔄 Script atualizado: ${scriptName}`, 'yellow')
       }
     }
 
-    if (scriptsUpdated > 0) {
+    // Salva package.json se houve mudanças
+    if (addedCount > 0 || updatedCount > 0) {
       fs.writeFileSync(
         packageJsonPath,
         JSON.stringify(packageJson, null, 2) + '\n'
       )
-      log(
-        `✅ ${scriptsUpdated} scripts atualizados no package.json para usar .${extension}`,
-        'green'
-      )
+
+      if (addedCount > 0) {
+        log(
+          `✅ ${addedCount} novos scripts adicionados ao package.json`,
+          'green'
+        )
+      }
+      if (updatedCount > 0) {
+        log(`✅ ${updatedCount} scripts atualizados no package.json`, 'green')
+      }
+    } else {
+      log('✅ Todos os scripts já estão atualizados no package.json', 'green')
     }
+
+    return { addedCount, updatedCount }
   } catch (error) {
-    log(
-      `⚠️  Aviso: Não foi possível verificar package.json: ${error.message}`,
-      'yellow'
-    )
+    log(`⚠️  Erro ao atualizar package.json: ${error.message}`, 'yellow')
+    return { addedCount: 0, updatedCount: 0 }
   }
 }
 
@@ -196,20 +216,34 @@ async function main() {
       }
     }
 
-    // Verifica se precisa atualizar package.json (para projetos que migraram)
-    await checkAndUpdatePackageJson(extension)
+    // Verifica se precisa atualizar package.json com novos scripts
+    const { addedCount, updatedCount } = await updatePackageJsonScripts(
+      extension
+    )
 
     log('', 'reset')
-    log('🎉 Todos os scripts foram atualizados!', 'green')
+    log('🎉 Atualização completa!', 'green')
     log('', 'reset')
-    log('📋 Scripts atualizados:', 'blue')
+    log('📋 Resumo da atualização:', 'blue')
     SCRIPTS.forEach((script) => {
       const fileName = script.replace('.js', `.${extension}`)
-      log(`  ✅ .infra/${fileName}`, 'green')
+      log(`  ✅ Script: .infra/${fileName}`, 'green')
     })
+
+    if (addedCount > 0 || updatedCount > 0) {
+      log('', 'reset')
+      log('📦 Scripts do package.json:', 'blue')
+      if (addedCount > 0) {
+        log(`  ➕ ${addedCount} novos scripts adicionados`, 'green')
+      }
+      if (updatedCount > 0) {
+        log(`  🔄 ${updatedCount} scripts atualizados`, 'yellow')
+      }
+    }
+
     log('', 'reset')
     log(
-      '💡 Agora você pode usar os comandos com as últimas melhorias!',
+      '💡 Agora você pode usar todos os comandos com as últimas melhorias!',
       'yellow'
     )
   } catch (error) {
@@ -223,4 +257,9 @@ if (require.main === module) {
   main()
 }
 
-module.exports = { downloadScript, main }
+module.exports = {
+  downloadScript,
+  generateInfraScripts,
+  updatePackageJsonScripts,
+  main
+}
