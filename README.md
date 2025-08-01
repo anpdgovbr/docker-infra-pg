@@ -1,14 +1,51 @@
-# 🐘 Docker Infraestrutura PostgreSQL - ANPD
+# 🐘 Infraestrutura PostgreSQL ANPD
 
-> **Infraestrutura genérica e auto-configurável para qualquer projeto ANPD**
-
-## 🚀 Setup Rápido (Uma Li## 📚 Documentação Completa
+> \*\*I## 📚 Documentação Completa
 
 - 📖 **[REPLICAR-EM-PROJETOS.md](./REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
 - 📋 **[SCRIPTS-PACKAGE-JSON.md](./SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para package.json
+- 🌍 **[CROSS-PLATFORM.md](./CROSS-PLATFORM.md)** - Helpers cross-platform (Node.js)
 - 🚀 **[CI-CD.md](./CI-CD.md)** - Automação e pipelines de CI/CD
 - 🔧 **[docs/](./docs/)** - Documentação técnica detalhada
-  No seu projeto, execute:
+
+## 📋 Pré-requisitos
+
+- 🐳 **Docker** e **Docker Compose**
+- 📦 **Node.js** (para helpers cross-platform)
+- 🟢 **npm** ou **yarn**
+- 🐧 **Bash** (Windows: Git Bash ou WSL)rutura PostgreSQL padronizada para projetos da ANPD com setup automatizado.\*\*
+
+## 🌍 **NOVO: 100% Cross-Platform!**
+
+Agora funciona perfeitamente em **Windows, macOS e Linux** usando Node.js! 🎉
+
+- ✅ **Windows** (PowerShell, CMD, Git Bash)
+- ✅ **macOS** (Terminal, iTerm)
+- ✅ **Linux** (bash, zsh, fish)
+- ✅ **CI/CD** (GitHub Actions, GitLab, Jenkins)
+
+## 🚀 Setup Rápido (Universal)
+
+### **Opção 1: Adicionar ao package.json (Recomendado)**
+
+```json
+{
+  "scripts": {
+    "postinstall": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > db-helper.js",
+    "infra:setup": "node setup-cross-platform.js",
+    "infra:up": "node docker-helper.js up",
+    "db:setup": "node db-helper.js setup"
+  }
+}
+```
+
+```bash
+npm install        # Baixa helpers automaticamente
+npm run infra:setup  # Configura infraestrutura
+npm run dev        # Seu projeto funcionando!
+```
+
+### **Opção 2: Comando Direto (Bash)**
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
@@ -16,7 +53,13 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup
 
 **Pronto!** Seu projeto agora tem uma infraestrutura PostgreSQL isolada e configurada.
 
-## 📋 Pré-requisitos
+## � Documentação Completa
+
+- 📖 **[REPLICAR-EM-PROJETOS.md](./REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
+- �📋 **[SCRIPTS-PACKAGE-JSON.md](./SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para package.json
+- 🌍 **[CROSS-PLATFORM.md](./CROSS-PLATFORM.md)** - Helpers cross-platform (Node.js)
+- 🚀 **[CI-CD.md](./CI-CD.md)** - Automação e pipelines de CI/CD
+- 🔧 **[docs/](./docs/)** - Documentação técnica detalhada
 
 Seu projeto deve ter:
 
