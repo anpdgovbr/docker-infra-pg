@@ -195,10 +195,10 @@ Adicione ao seu `package.json`:
 # Setup inicial (primeira vez)
 npm run infra:setup
 
-# Setup com controle manual
+# Setup com controle manual (baixa scripts e executa)
 npm run infra:setup:manual
 
-# Setup forçado (CI/CD)
+# Setup forçado - regenera tudo (baixa scripts e executa)
 npm run infra:setup:force
 
 # Atualizar scripts (quando há melhorias no repo)
