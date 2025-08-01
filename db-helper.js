@@ -229,10 +229,12 @@ function main() {
   }
 
   // Executa o comando
-  commands[command]().catch((error) => {
+  try {
+    commands[command]()
+  } catch (error) {
     log(`❌ Falha na execução: ${error.message}`, 'red')
     process.exit(1)
-  })
+  }
 }
 
 // Executar apenas se chamado diretamente
