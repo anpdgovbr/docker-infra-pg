@@ -40,6 +40,10 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-
 **Para projetos ES Module (`"type": "module"`):**
 
 ```bash
+# 🚀 Cross-Platform Auto-Detect (Recomendado)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
+
+# Manual por SO:
 # Windows (PowerShell/CMD)
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
 

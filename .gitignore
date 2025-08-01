@@ -21,3 +21,8 @@ config/servers.json
 # 🔧 Outros arquivos temporários
 *.bak
 *.tmp
+
+# 🧪 Arquivos temporários de testes e setup
+temp-setup.cjs
+temp-setup.js
+*-temp.*

@@ -151,10 +151,17 @@ async function executeDockerCommands(args = []) {
       .basename(process.cwd())
       .replace(/[@\/]/g, '')
       .replace(/-/g, '_')
-    let dbName = existingEnvVars.POSTGRES_DB || `${projectName}_dev`
-    let dbUser = existingEnvVars.POSTGRES_USER || 'dev_user'
-    let dbPassword =
-      existingEnvVars.POSTGRES_PASSWORD || generateSecurePassword()
+
+    // Com --force, sempre gera valores novos. Sem --force, preserva existentes
+    let dbName = isForce
+      ? `${projectName}_dev`
+      : existingEnvVars.POSTGRES_DB || `${projectName}_dev`
+    let dbUser = isForce
+      ? 'dev_user'
+      : existingEnvVars.POSTGRES_USER || 'dev_user'
+    let dbPassword = isForce
+      ? generateSecurePassword()
+      : existingEnvVars.POSTGRES_PASSWORD || generateSecurePassword()
 
     // Modo manual: perguntar ao usuário
     if (isManual) {
