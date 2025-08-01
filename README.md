@@ -204,6 +204,9 @@ npm run infra:setup:force
 # Atualizar scripts (quando há melhorias no repo)
 npm run infra:update
 
+# Debug de configuração (quando há problemas de conexão)
+npm run infra:debug
+
 # Desenvolvimento diário
 npm run db:setup && npm run dev
 

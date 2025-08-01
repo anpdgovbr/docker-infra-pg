@@ -129,6 +129,7 @@ function generateInfraScripts() {
     'infra:setup:manual': `node .infra/setup-cross-platform.${extension} --manual`,
     'infra:setup:force': `node .infra/setup-cross-platform.${extension} --force --auto`,
     'infra:update': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js -o .infra/update-scripts.${extension} && node .infra/update-scripts.${extension}`,
+    'infra:debug': `curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/diagnostic.js -o .infra/diagnostic.${extension} && node .infra/diagnostic.${extension}`,
     'infra:up': `node .infra/docker-helper.${extension} up`,
     'infra:down': `node .infra/docker-helper.${extension} down`,
     'infra:logs': `node .infra/docker-helper.${extension} logs`,
