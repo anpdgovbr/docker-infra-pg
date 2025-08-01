@@ -27,6 +27,16 @@ function isNodeProject() {
   return fs.existsSync('package.json')
 }
 
+// Detecta se o projeto usa ES modules
+function isESModuleProject() {
+  try {
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+    return packageJson.type === 'module'
+  } catch {
+    return false
+  }
+}
+
 // Lê o package.json atual
 function readPackageJson() {
   try {
@@ -48,6 +58,10 @@ function setupGitignore() {
 # Infraestrutura PostgreSQL ANPD
 .infra/
 infra-db/
+
+# Scripts temporários da infraestrutura (caso fiquem na raiz)
+setup-infra.sh
+setup-infra-temp.sh
 `
 
   let currentGitignore = ''
@@ -58,7 +72,8 @@ infra-db/
   // Verifica se já está configurado
   if (
     currentGitignore.includes('.infra/') ||
-    currentGitignore.includes('infra-db/')
+    currentGitignore.includes('infra-db/') ||
+    currentGitignore.includes('setup-infra.sh')
   ) {
     log('✅ .gitignore já configurado', 'green')
     return
@@ -69,26 +84,65 @@ infra-db/
   log('✅ .gitignore configurado', 'green')
 }
 
-// Scripts da infraestrutura
-const infraScripts = {
-  'infra:setup':
-    'mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js',
-  'infra:setup:manual': 'node .infra/setup-cross-platform.js --manual',
-  'infra:setup:force': 'node .infra/setup-cross-platform.js --force --auto',
-  'infra:up': 'node .infra/docker-helper.js up',
-  'infra:down': 'node .infra/docker-helper.js down',
-  'infra:logs': 'node .infra/docker-helper.js logs',
-  'infra:reset': 'node .infra/docker-helper.js reset',
-  'infra:clean': 'node .infra/docker-helper.js clean',
-  'infra:psql': 'node .infra/docker-helper.js psql',
-  'infra:status': 'node .infra/docker-helper.js status',
-  'infra:backup': 'node .infra/docker-helper.js backup',
-  'infra:db:init': 'node .infra/db-helper.js setup',
-  'infra:db:fresh': 'node .infra/db-helper.js fresh',
-  'infra:db:migrate': 'node .infra/db-helper.js migrate',
-  'infra:db:seed': 'node .infra/db-helper.js seed',
-  'infra:db:studio': 'node .infra/db-helper.js studio',
-  'infra:db:reset': 'node .infra/db-helper.js reset'
+// Remove arquivos temporários da raiz do projeto
+function cleanupTempFiles() {
+  const tempFiles = [
+    'setup-infra.sh',
+    'setup-infra-temp.sh',
+    'docker-helper.js',
+    'db-helper.js',
+    'setup-cross-platform.js'
+  ]
+
+  let removedCount = 0
+  for (const file of tempFiles) {
+    if (fs.existsSync(file)) {
+      try {
+        fs.unlinkSync(file)
+        removedCount++
+        log(`🧹 Removido arquivo temporário: ${file}`, 'yellow')
+      } catch (error) {
+        log(`⚠️  Não foi possível remover ${file}: ${error.message}`, 'yellow')
+      }
+    }
+  }
+
+  if (removedCount > 0) {
+    log(`✅ ${removedCount} arquivos temporários removidos da raiz`, 'green')
+  }
+}
+
+// Gera scripts da infraestrutura baseado no tipo de módulo
+function generateInfraScripts() {
+  const isESModule = isESModuleProject()
+  const extension = isESModule ? 'cjs' : 'js'
+
+  log(
+    `📦 Projeto ${
+      isESModule ? 'ES Module' : 'CommonJS'
+    } detectado - usando .${extension}`,
+    'blue'
+  )
+
+  return {
+    'infra:setup': `mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.${extension} && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.${extension} && node .infra/setup-cross-platform.${extension}`,
+    'infra:setup:manual': `node .infra/setup-cross-platform.${extension} --manual`,
+    'infra:setup:force': `node .infra/setup-cross-platform.${extension} --force --auto`,
+    'infra:up': `node .infra/docker-helper.${extension} up`,
+    'infra:down': `node .infra/docker-helper.${extension} down`,
+    'infra:logs': `node .infra/docker-helper.${extension} logs`,
+    'infra:reset': `node .infra/docker-helper.${extension} reset`,
+    'infra:clean': `node .infra/docker-helper.${extension} clean`,
+    'infra:psql': `node .infra/docker-helper.${extension} psql`,
+    'infra:status': `node .infra/docker-helper.${extension} status`,
+    'infra:backup': `node .infra/docker-helper.${extension} backup`,
+    'infra:db:init': `node .infra/db-helper.${extension} setup`,
+    'infra:db:fresh': `node .infra/db-helper.${extension} fresh`,
+    'infra:db:migrate': `node .infra/db-helper.${extension} migrate`,
+    'infra:db:seed': `node .infra/db-helper.${extension} seed`,
+    'infra:db:studio': `node .infra/db-helper.${extension} studio`,
+    'infra:db:reset': `node .infra/db-helper.${extension} reset`
+  }
 }
 
 // Adiciona scripts ao package.json
@@ -97,6 +151,7 @@ function addInfraScripts(pkg) {
     pkg.scripts = {}
   }
 
+  const infraScripts = generateInfraScripts()
   let addedCount = 0
   for (const [key, value] of Object.entries(infraScripts)) {
     if (!pkg.scripts[key]) {
@@ -140,6 +195,9 @@ function main() {
     // Configura .gitignore
     setupGitignore()
 
+    // Remove arquivos temporários da raiz
+    cleanupTempFiles()
+
     // Cria pasta .infra se não existir
     if (!fs.existsSync('.infra')) {
       fs.mkdirSync('.infra')
@@ -166,4 +224,9 @@ if (require.main === module) {
   main()
 }
 
-module.exports = { addInfraScripts, setupGitignore, infraScripts }
+module.exports = {
+  addInfraScripts,
+  setupGitignore,
+  generateInfraScripts,
+  cleanupTempFiles
+}

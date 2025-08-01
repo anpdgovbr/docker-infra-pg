@@ -40,7 +40,14 @@ function downloadScript() {
         let data = ''
         response.on('data', (chunk) => (data += chunk))
         response.on('end', () => {
-          const scriptPath = path.join(process.cwd(), 'setup-infra.sh')
+          // Criar pasta .infra se não existir
+          const infraDir = path.join(process.cwd(), '.infra')
+          if (!fs.existsSync(infraDir)) {
+            fs.mkdirSync(infraDir, { recursive: true })
+          }
+
+          // Salvar script na pasta .infra em vez da raiz
+          const scriptPath = path.join(infraDir, 'setup-infra.sh')
           fs.writeFileSync(scriptPath, data)
 
           // No Unix, dar permissão de execução
@@ -62,32 +69,116 @@ function downloadScript() {
   })
 }
 
+// Converte caminho Windows para formato Unix (para Git Bash)
+function convertToUnixPath(windowsPath) {
+  if (!isWindows) return windowsPath
+
+  // Converte C:\path\to\file para /c/path/to/file
+  return windowsPath
+    .replace(/^([A-Z]):\\/, '/$1/')
+    .replace(/\\/g, '/')
+    .toLowerCase()
+}
+
+// Executa comandos Docker diretamente (sem bash)
+function executeDockerCommands(args = []) {
+  return new Promise((resolve, reject) => {
+    try {
+      log('🐳 Executando comandos Docker diretamente...', 'yellow')
+
+      // Verifica se Docker está disponível
+      execSync('docker --version', { stdio: 'ignore' })
+      log('✅ Docker encontrado', 'green')
+
+      // Verifica se Docker Compose está disponível
+      execSync('docker compose version', { stdio: 'ignore' })
+      log('✅ Docker Compose encontrado', 'green')
+
+      // Cria pasta infra-db se não existir
+      const infraDbPath = path.join(process.cwd(), 'infra-db')
+      if (!fs.existsSync(infraDbPath)) {
+        fs.mkdirSync(infraDbPath, { recursive: true })
+        log('✅ Pasta infra-db criada', 'green')
+      }
+
+      // Cria docker-compose.yml
+      const dockerComposeContent = `version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-dev
+    environment:
+      POSTGRES_DB: \${POSTGRES_DB:-dev_db}
+      POSTGRES_USER: \${POSTGRES_USER:-dev_user}
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dev_network
+
+volumes:
+  postgres_data:
+
+networks:
+  dev_network:
+    driver: bridge
+`
+
+      const dockerComposePath = path.join(infraDbPath, 'docker-compose.yml')
+      fs.writeFileSync(dockerComposePath, dockerComposeContent)
+      log('✅ docker-compose.yml criado', 'green')
+
+      // Cria .env
+      const envContent = `# PostgreSQL Configuration
+POSTGRES_DB=dev_db
+POSTGRES_USER=dev_user
+POSTGRES_PASSWORD=dev_password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+DATABASE_URL="postgresql://dev_user:dev_password@localhost:5432/dev_db"
+`
+
+      const envPath = path.join(infraDbPath, '.env')
+      if (!fs.existsSync(envPath)) {
+        fs.writeFileSync(envPath, envContent)
+        log('✅ .env criado', 'green')
+      } else {
+        log('✅ .env já existe', 'green')
+      }
+
+      log('✅ Infraestrutura configurada com sucesso!', 'green')
+      resolve()
+    } catch (error) {
+      if (error.message.includes('docker')) {
+        reject(
+          new Error(
+            'Docker não encontrado. Instale o Docker Desktop: https://www.docker.com/products/docker-desktop'
+          )
+        )
+      } else {
+        reject(error)
+      }
+    }
+  })
+}
+
 // Executa o script
 function executeScript(scriptPath, args = []) {
   return new Promise((resolve, reject) => {
+    // No Windows, usar comandos Docker diretos em vez de bash
+    if (isWindows) {
+      executeDockerCommands(args).then(resolve).catch(reject)
+      return
+    }
+
+    // Para macOS e Linux, usar o método original com bash
     let command, commandArgs
 
-    if (isWindows) {
-      // No Windows, usar Git Bash se disponível, senão WSL
-      try {
-        execSync('bash --version', { stdio: 'ignore' })
-        command = 'bash'
-        commandArgs = [scriptPath, ...args]
-      } catch {
-        try {
-          execSync('wsl --version', { stdio: 'ignore' })
-          command = 'wsl'
-          commandArgs = ['bash', scriptPath, ...args]
-        } catch {
-          reject(new Error('Bash não encontrado. Instale Git Bash ou WSL.'))
-          return
-        }
-      }
-    } else {
-      // macOS e Linux
-      command = 'bash'
-      commandArgs = [scriptPath, ...args]
-    }
+    // macOS e Linux
+    command = 'bash'
+    commandArgs = [scriptPath, ...args]
 
     log(`Executando: ${command} ${commandArgs.join(' ')}`, 'blue')
 
@@ -133,18 +224,26 @@ async function main() {
     log('🚀 Configurando infraestrutura PostgreSQL (Cross-Platform)', 'green')
     log(`📊 Plataforma detectada: ${os.platform()} ${os.arch()}`, 'blue')
 
-    // Download do script
-    log('⬇️  Baixando script de setup...', 'yellow')
-    const scriptPath = await downloadScript()
-    log('✅ Script baixado com sucesso!', 'green')
+    if (isWindows) {
+      // No Windows, usar comandos Docker diretos
+      log('🔧 Executando configuração...', 'yellow')
+      await executeScript(null, args)
+      log('✅ Configuração concluída!', 'green')
+    } else {
+      // Para macOS e Linux, usar o método original com bash
+      // Download do script
+      log('⬇️  Baixando script de setup...', 'yellow')
+      const scriptPath = await downloadScript()
+      log('✅ Script baixado com sucesso!', 'green')
 
-    // Execução
-    log('🔧 Executando configuração...', 'yellow')
-    await executeScript(scriptPath, args)
-    log('✅ Configuração concluída!', 'green')
+      // Execução
+      log('🔧 Executando configuração...', 'yellow')
+      await executeScript(scriptPath, args)
+      log('✅ Configuração concluída!', 'green')
 
-    // Limpeza
-    cleanup(scriptPath)
+      // Limpeza
+      cleanup(scriptPath)
+    }
   } catch (error) {
     log(`❌ Erro: ${error.message}`, 'red')
     process.exit(1)

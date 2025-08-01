@@ -4,7 +4,16 @@ Este arquivo contém templates **verdadeiramente cross-platform** que funcionam 
 
 ## 🌍 **NOVIDADE: Scripts Cross-Platform**
 
-Agora todos os scripts funcionam em **qualqu### **Setup Inicial (Primeira vez)\*\*
+Agora todos os scripts funcionam em **qualquer OS que rode Node.js!** 🎉
+
+> **⚠️ IMPORTANTE para projetos ES Modules:**  
+> Se seu projeto usa `"type": "module"` no package.json, use nosso **auto-setup** que detecta automaticamente e configura as extensões corretas:
+>
+> ```bash
+> curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+> ```
+
+### **Setup Inicial (Primeira vez)**
 
 ```bash
 npm run infra:setup      # Baixa helpers + configura infraestrutura
@@ -428,6 +437,45 @@ node .infra/setup-cross-platform.js --force --db-name=meu_projeto_especifico
     "test:full": "npm run infra:db:fresh && npm run test && npm run test:e2e"
   }
 }
+```
+
+---
+
+## 🚨 **Solução de Problemas**
+
+### **Erro "Cannot find module" em projetos ES Modules**
+
+Se você receber o erro:
+
+```
+Error: Cannot find module '.infra/setup-cross-platform.js'
+```
+
+**Causa:** Seu projeto usa `"type": "module"` no package.json, mas os helpers são CommonJS.
+
+**Solução:** Use o auto-setup que detecta automaticamente:
+
+```bash
+# Solução automática (recomendada)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+
+# Ou atualização manual dos scripts existentes
+node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); Object.keys(pkg.scripts).forEach(key => { if (key.startsWith('infra:') && pkg.scripts[key].includes('.js')) { pkg.scripts[key] = pkg.scripts[key].replace(/\.js/g, '.cjs'); } }); fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+```
+
+### **Comando mkdir não reconhecido no PowerShell**
+
+**Causa:** O PowerShell não reconhece `mkdir -p` nem redirecionamentos Unix.
+
+**Solução:** Use PowerShell nativo ou o auto-setup:
+
+```powershell
+# PowerShell nativo
+if (-not (Test-Path .infra)) { New-Item -ItemType Directory -Path .infra -Force }
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js' -OutFile '.infra/setup-cross-platform.cjs' -UseBasicParsing
+
+# Ou use o auto-setup (recomendado)
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js' -OutFile 'temp-setup.js' -UseBasicParsing; node temp-setup.js; Remove-Item temp-setup.js
 ```
 
 ---
