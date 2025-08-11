@@ -168,7 +168,6 @@ seu-projeto/
 ### Docker Compose Gerado
 
 ```yaml
-version: '3.8'
 services:
   postgres:
     image: postgres:15

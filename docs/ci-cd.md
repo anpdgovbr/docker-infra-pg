@@ -179,8 +179,6 @@ CMD ["npm", "start"]
 ### **docker-compose.yml para Development**
 
 ```yaml
-version: '3.8'
-
 services:
   app:
     build: .

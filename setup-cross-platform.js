@@ -146,17 +146,22 @@ function parseDatabaseUrl(databaseUrl) {
 function createDockerCompose(config) {
   const { projectName, port, dbName, username, password } = config
 
+  // Função para sanitizar nomes Docker (não pode começar com underscore, hífen ou ponto)
+  const sanitizeName = (name) => {
+    return name
+      .replace(/[^a-zA-Z0-9]/g, '_') // Substituir caracteres especiais por underscore
+      .replace(/^[^a-zA-Z0-9]+/, '') // Remover underscores, hífens do início
+      .replace(/^$/, 'project') // Se vazio, usar 'project'
+      .toLowerCase() // Docker prefere lowercase
+  }
+
   // Nome do container e network únicos por projeto
-  const containerName = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}-postgres`
-  const networkName = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_network`
-  const volumeName = `${projectName.replace(
-    /[^a-zA-Z0-9]/g,
-    '_'
-  )}_postgres_data`
+  const safeName = sanitizeName(projectName)
+  const containerName = `${safeName}_postgres`
+  const networkName = `${safeName}_network`
+  const volumeName = `${safeName}_postgres_data`
 
-  const dockerComposeContent = `version: '3.8'
-
-services:
+  const dockerComposeContent = `services:
   postgres:
     image: postgres:15
     container_name: ${containerName}

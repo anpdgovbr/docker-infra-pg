@@ -297,6 +297,18 @@ DATABASE_URL="postgresql://dev_user:DEF456@localhost:5434/transparencia_dev"
 
 ## 🚨 Solução de Problemas
 
+### Erro: "includes invalid characters for a local volume name"
+
+Este erro acontece quando o nome do volume começa com underscore (\_). **Correção automática:**
+
+```bash
+# 🔧 Quick Fix - Corrige nomes inválidos automaticamente
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-fix-volumes.js | node
+
+# Depois suba a infraestrutura normalmente
+npm run infra:up
+```
+
 ### Erro: "Port already in use"
 
 ```bash

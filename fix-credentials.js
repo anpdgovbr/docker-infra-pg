@@ -44,16 +44,21 @@ function readEnvFile(filePath) {
 
 // Gera docker-compose.yml com credenciais corretas e porta inteligente
 function generateDockerCompose(dbName, dbUser, dbPassword, dbPort = 5432) {
-  const projectName = path
-    .basename(process.cwd())
-    .replace(/[@\/]/g, '')
-    .replace(/-/g, '_')
+  // Função para sanitizar nomes Docker (não pode começar com underscore, hífen ou ponto)
+  const sanitizeName = (name) => {
+    return name
+      .replace(/[^a-zA-Z0-9]/g, '_') // Substituir caracteres especiais por underscore
+      .replace(/^[^a-zA-Z0-9]+/, '') // Remover underscores, hífens do início
+      .replace(/^$/, 'project') // Se vazio, usar 'project'
+      .toLowerCase() // Docker prefere lowercase
+  }
 
-  return `version: '3.8'
-services:
+  const projectName = sanitizeName(path.basename(process.cwd()))
+
+  return `services:
   postgres:
     image: postgres:15
-    container_name: ${projectName}-postgres
+    container_name: ${projectName}_postgres
     environment:
       POSTGRES_DB: \${POSTGRES_DB:-${dbName}}
       POSTGRES_USER: \${POSTGRES_USER:-${dbUser}}
@@ -61,15 +66,17 @@ services:
     ports:
       - "${dbPort}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${projectName}_postgres_data:/var/lib/postgresql/data
     networks:
       - ${projectName}_network
 
 volumes:
-  postgres_data:
+  ${projectName}_postgres_data:
+    name: ${projectName}_postgres_data
 
 networks:
   ${projectName}_network:
+    name: ${projectName}_network
     driver: bridge
 `
 }
