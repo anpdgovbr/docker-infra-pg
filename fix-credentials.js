@@ -55,7 +55,9 @@ function generateDockerCompose(dbName, dbUser, dbPassword, dbPort = 5432) {
 
   const projectName = sanitizeName(path.basename(process.cwd()))
 
-  return `services:
+  return `name: ${projectName}-stack
+
+services:
   postgres:
     image: postgres:15
     container_name: ${projectName}_postgres

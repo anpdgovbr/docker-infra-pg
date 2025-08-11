@@ -161,7 +161,9 @@ function createDockerCompose(config) {
   const networkName = `${safeName}_network`
   const volumeName = `${safeName}_postgres_data`
 
-  const dockerComposeContent = `services:
+  const dockerComposeContent = `name: ${safeName}-stack
+
+services:
   postgres:
     image: postgres:15
     container_name: ${containerName}

@@ -1,8 +1,10 @@
-# 🔌 Gerenciamento Inteligente de Portas
+# 🔌 Gerenciamento Inteligente de Portas + Isolamento de Stacks
 
-## 🎯 Problema Resolvido
+## 🎯 Dois Problemas Resolvidos
 
-Quando você tem múltiplos projetos na mesma VM usando PostgreSQL, todos tentavam usar a porta `5432`, causando conflitos:
+### 1. Conflito de Portas
+
+Quando você tem múltiplos projetos na mesma VM usando PostgreSQL, todos tentavam usar a porta `5432`:
 
 ```bash
 ❌ ANTES:
@@ -12,10 +14,28 @@ Projeto C: localhost:5432 ❌ ERRO: Port already in use
 ```
 
 ```bash
-✅ AGORA (Automático):
+✅ AGORA (Detecção Automática):
 Projeto A: localhost:5432 ✅
 Projeto B: localhost:5433 ✅ (detectado automaticamente)
 Projeto C: localhost:5434 ✅ (detectado automaticamente)
+```
+
+### 2. Conflito de Stacks Docker
+
+Mesmo com portas diferentes, projetos se sobrepunham porque usavam a mesma stack `infra-db`:
+
+```bash
+❌ ANTES (Stack Compartilhada):
+cd projeto-a && npm run infra:up  # ✅ Funcionava
+cd projeto-b && npm run infra:up  # ✅ Funcionava, mas parava projeto-a
+cd projeto-a && npm run infra:up  # ✅ Funcionava, mas parava projeto-b
+```
+
+```bash
+✅ AGORA (Stacks Isoladas):
+cd projeto-a && npm run infra:up  # ✅ Stack: projeto-a-stack
+cd projeto-b && npm run infra:up  # ✅ Stack: projeto-b-stack (projeto-a continua funcionando!)
+cd projeto-c && npm run infra:up  # ✅ Stack: projeto-c-stack (todos funcionam juntos!)
 ```
 
 ## 🤖 Como Funciona

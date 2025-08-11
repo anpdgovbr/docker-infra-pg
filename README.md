@@ -273,13 +273,23 @@ npm run infra:setup
 ### Resultado
 
 ```bash
-# Containers isolados rodando simultaneamente
+# Containers isolados rodando simultaneamente com stacks únicas
 docker ps --filter "name=postgres"
 
 CONTAINER ID   IMAGE         PORTS                    NAMES
-abc123def456   postgres:15   0.0.0.0:5432->5432/tcp   backlog_dim-postgres
-def456ghi789   postgres:15   0.0.0.0:5433->5432/tcp   controladores_api-postgres
-ghi789jkl012   postgres:15   0.0.0.0:5434->5432/tcp   transparencia-postgres
+abc123def456   postgres:15   0.0.0.0:5432->5432/tcp   backlog_dim_postgres
+def456ghi789   postgres:15   0.0.0.0:5433->5432/tcp   controladores_api_postgres
+ghi789jkl012   postgres:15   0.0.0.0:5434->5432/tcp   transparencia_postgres
+```
+
+```bash
+# Stacks Docker Compose isoladas
+docker compose ls
+
+NAME                     STATUS    CONFIG FILES
+backlog-dim-stack        running   /home/anpdadmin/backlog-dim/infra-db/docker-compose.yml
+controladores-api-stack  running   /home/anpdadmin/controladores-api/infra-db/docker-compose.yml
+transparencia-stack      running   /home/anpdadmin/transparencia/infra-db/docker-compose.yml
 ```
 
 ### Arquivos .env Gerados
@@ -295,7 +305,17 @@ DATABASE_URL="postgresql://dev_user:XYZ789@localhost:5433/controladores_api_dev"
 DATABASE_URL="postgresql://dev_user:DEF456@localhost:5434/transparencia_dev"
 ```
 
-## 🚨 Solução de Problemas
+### docker-compose.yml com Stack Única
+
+````yaml
+name: backlog-dim-stack  # ← Nome único da stack!
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: backlog_dim_postgres
+    # ... resto da configuração
+```## 🚨 Solução de Problemas
 
 ### Erro: "includes invalid characters for a local volume name"
 
@@ -307,7 +327,21 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick
 
 # Depois suba a infraestrutura normalmente
 npm run infra:up
+````
+
+### Problema: Projetos se sobrepõem (último que sobe é o único que fica)
+
+Este problema acontece quando múltiplos projetos usam a mesma **stack do Docker Compose**. **Correção automática:**
+
+```bash
+# 🔧 Fix Stack Conflict - Resolve conflitos entre projetos
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/fix-stack-conflict.js | node
+
+# Agora cada projeto terá sua própria stack isolada
+npm run infra:status  # Verificar se está funcionando
 ```
+
+**Como funciona:** Adiciona `name: projeto-stack` no docker-compose.yml, garantindo que cada projeto tenha containers, volumes e networks completamente isolados.
 
 ### Erro: "Port already in use"
 

@@ -85,6 +85,11 @@ function fixDockerCompose() {
   // Remover version obsoleta se existir
   content = content.replace(/^version:\s*['"][^'"]*['"]?\s*\n/, '')
 
+  // Adicionar nome da stack se não existir
+  if (!content.includes('name:')) {
+    content = `name: ${projectName}-stack\n\n${content}`
+  }
+
   // Salvar arquivo corrigido
   fs.writeFileSync(dockerComposePath, content)
   log('✅ docker-compose.yml corrigido!', 'green')
