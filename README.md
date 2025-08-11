@@ -1,37 +1,37 @@
-# 🐘 Infraestrutura PostgreSQL ANPD
+# 🐘 Docker PostgreSQL Infrastructure ANPD
 
-> \*\*I## 📚 Documentação Completa
+> **Infraestrutura PostgreSQL padronizada para projetos da ANPD com setup automatizado e detecção inteligente de porta.**
 
-- 📖 **[REPLICAR-EM-PROJETOS.md](./REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
-- 📋 **[SCRIPTS-PACKAGE-JSON.md](./SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para package.json
-- 🔗 **[INTEGRACAO-PROJETO-EXISTENTE.md](./INTEGRACAO-PROJETO-EXISTENTE.md)** - Como integrar em projetos que já existem
-- 🌍 **[CROSS-PLATFORM.md](./CROSS-PLATFORM.md)** - Helpers cross-platform (Node.js)
-- 🚀 **[CI-CD.md](./CI-CD.md)** - Automação e pipelines de CI/CD
-- 🔧 **[docs/](./docs/)** - Documentação técnica detalhada
+## 🌟 **NOVO v2.0: Detecção Inteligente de Porta!**
 
-## 📋 Pré-requisitos
+Agora você pode ter **múltiplos projetos na mesma VM** sem conflitos! O sistema automaticamente:
 
-- 🐳 **Docker** e **Docker Compose**
-- 📦 **Node.js** (para helpers cross-platform)
-- 🟢 **npm** ou **yarn**
-- 🐧 **Bash** (Windows: Git Bash ou WSL)rutura PostgreSQL padronizada para projetos da ANPD com setup automatizado.\*\*
+- ✅ **Detecta portas em uso** por outros projetos PostgreSQL
+- ✅ **Encontra porta disponível** automaticamente (5432, 5433, 5434...)
+- ✅ **Salva configuração** para próximas execuções
+- ✅ **Isola completamente** containers, redes e volumes por projeto
 
-## 🌍 **NOVO: 100% Cross-Platform!**
+```bash
+# Exemplo: 3 projetos na mesma VM
+Projeto A (backlog-dim):      localhost:5432  ✅
+Projeto B (controladores):    localhost:5433  ✅ (detectado automaticamente)
+Projeto C (transparencia):    localhost:5434  ✅ (detectado automaticamente)
+```
 
-Agora funciona perfeitamente em **Windows, macOS e Linux** usando Node.js! 🎉
+## 🌍 **Cross-Platform Completo**
+
+Funciona perfeitamente em **Windows, macOS e Linux** usando Node.js:
 
 - ✅ **Windows** (PowerShell, CMD, Git Bash)
 - ✅ **macOS** (Terminal, iTerm)
 - ✅ **Linux** (bash, zsh, fish)
 - ✅ **CI/CD** (GitHub Actions, GitLab, Jenkins)
 
-## 🚀 Setup Rápido (Universal)
+## 🚀 Setup Rápido (1 Comando)
 
-### **🤖 Opção 1: Auto-Setup (Mais Fácil)**
+### **🤖 Auto-Setup (Mais Fácil)**
 
 Um comando que configura tudo automaticamente:
-
-**Para projetos CommonJS (padrão):**
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
@@ -40,10 +40,6 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-
 **Para projetos ES Module (`"type": "module"`):**
 
 ```bash
-# 🚀 Cross-Platform Auto-Detect (Recomendado)
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
-
-# Manual por SO:
 # Windows (PowerShell/CMD)
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
 
@@ -51,56 +47,36 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && rm temp-setup.cjs
 ```
 
-**🎯 O que faz automaticamente:**
-O auto-setup detecta o tipo do projeto e configura arquivos `.cjs` para compatibilidade.
-
-Isso irá:
-
-- ✅ Adicionar scripts `infra:*` ao package.json (sem conflitos)
-- ✅ Configurar .gitignore automaticamente
-- ✅ Criar estrutura de pastas `.infra/`
-- ✅ Detectar ES modules e configurar extensões corretas
-- ✅ Não modificar scripts existentes
+### **⚡ Universal Auto-Detect**
 
 ```bash
-npm run infra:setup  # Configura infraestrutura
-npm run dev          # Seu projeto funcionando!
-```
-
-### **📝 Opção 2: Manual (Para quem quer controle)**
-
-```json
-{
-  "scripts": {
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
-    "infra:up": "node .infra/docker-helper.js up",
-    "infra:db:init": "node .infra/db-helper.js setup"
-  }
-}
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
 ```
 
 **✅ Sem Conflitos**: Scripts usam prefixo `infra:*` - não interferem com scripts existentes do Prisma, Next.js, etc.
 
+### **Resultado:**
+
 ```bash
-npm run infra:setup  # Configura infraestrutura
+npm run infra:setup  # Configura infraestrutura (com detecção automática de porta)
 npm run dev          # Seu projeto funcionando!
 ```
 
-### **Opção 3: Comando Direto (Bash)**
+## 📚 Documentação Completa
 
-```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
-```
+- 📖 **[Guia Completo](./docs/guia-completo.md)** - Tutorial passo a passo
+- 🔌 **[Gerenciamento de Portas](./docs/port-management.md)** - Sistema de detecção inteligente
+- 📋 **[Comandos Disponíveis](./docs/comandos.md)** - Referência de todos os scripts NPM
+- 🌍 **[Cross-Platform](./docs/cross-platform.md)** - Suporte Windows, macOS, Linux
+- 🚀 **[CI/CD](./docs/ci-cd.md)** - Automação e pipelines
+- 🚨 **[Troubleshooting](./docs/troubleshooting.md)** - Solução de problemas
+- 📚 **[Índice Completo](./docs/index.md)** - Toda documentação
 
-**Pronto!** Seu projeto agora tem uma infraestrutura PostgreSQL isolada e configurada.
+## 🔧 Pré-requisitos
 
-## � Documentação Completa
-
-- 📖 **[REPLICAR-EM-PROJETOS.md](./REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
-- �📋 **[SCRIPTS-PACKAGE-JSON.md](./SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para package.json
-- 🌍 **[CROSS-PLATFORM.md](./CROSS-PLATFORM.md)** - Helpers cross-platform (Node.js)
-- 🚀 **[CI-CD.md](./CI-CD.md)** - Automação e pipelines de CI/CD
-- 🔧 **[docs/](./docs/)** - Documentação técnica detalhada
+- 🐳 **Docker** e **Docker Compose**
+- 📦 **Node.js** (para helpers cross-platform)
+- 🟢 **npm** ou **yarn**
 
 Seu projeto deve ter:
 
@@ -115,12 +91,13 @@ Seu projeto deve ter:
 
 1. **Script lê seu projeto** (package.json + .env)
 2. **Detecta dados faltantes** (nome, usuário, senha do banco)
-3. **Oferece opções inteligentes** (auto-gerar, manual, ou parar)
-4. **Clona esta infraestrutura** para pasta `infra-db/`
-5. **Configura tudo** baseado no seu projeto
-6. **Sincroniza seu .env** com dados finais
+3. **🆕 Detecta porta disponível** automaticamente
+4. **Oferece opções inteligentes** (auto-gerar, manual, ou parar)
+5. **Clona esta infraestrutura** para pasta `infra-db/`
+6. **Configura tudo** baseado no seu projeto
+7. **Sincroniza seu .env** com dados finais
 
-> **💡 Nota:** A pasta local sempre será `infra-db/` independente do nome do repositório, garantindo que todos os comandos funcionem consistentemente em qualquer projeto.
+> **💡 Isolamento:** Cada projeto tem containers, redes e volumes únicos (`projeto-postgres`, `projeto_network`)
 
 ## 🧠 Atualização Inteligente (NOVO!)
 
@@ -139,95 +116,31 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart
 npm run infra:update
 ```
 
-**O que a atualização inteligente faz:**
-
-1. **Baixa** a versão mais recente do `update-scripts.js`
-2. **Executa** a atualização com toda inteligência nova
-3. **Adiciona** scripts novos ao `package.json` (como `infra:fix`)
-4. **Atualiza** scripts existentes com melhorias
-5. **Corrige** extensões de arquivo (`.js` ↔ `.cjs`) automaticamente
-6. **Mostra** relatório detalhado do que foi feito
-
 **Perfeito para resolver:** "npm error Missing script: infra:fix"
 
-## ✅ Resultado
+## ✅ Resultado Final
 
 - ✅ PostgreSQL isolado para seu projeto
+- ✅ **Porta única automaticamente detectada** (5432, 5433, 5434...)
 - ✅ Credenciais únicas e seguras (preserva existentes)
 - ✅ Zero configuração manual
 - ✅ Banco pronto para Prisma/migrations
 - ✅ Sincronização automática do .env
+- ✅ **Múltiplos projetos na mesma VM sem conflitos**
 
-## 🔧 Modos de Execução
+## 📋 Comandos Essenciais
 
-### 🤖 **Modo Automático (Recomendado para CI/CD)**
-
-```bash
-# Via curl (detecta pipe automaticamente)
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash
-
-# Local com parâmetros
-./setup-infra.sh --force --auto
-```
-
-### ✏️ **Modo Manual (Controle Total)**
+### Setup e Configuração
 
 ```bash
-# Download primeiro
-wget https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh
-chmod +x setup-infra.sh
-
-# Execução interativa
-./setup-infra.sh --manual
-
-# Ou com dados específicos
-./setup-infra.sh --force --db-name=meudb --db-user=meuuser --db-password=minhasenha
-```
-
-### 📚 **Parâmetros Disponíveis**
-
-```bash
---force               # Sobrescrever infra-db sem perguntar
---auto                # Gerar dados faltantes automaticamente
---manual              # Pedir dados faltantes via prompt
---db-name=NOME        # Nome do banco
---db-user=USER        # Usuário do banco
---db-password=PASS    # Senha do banco
---help, -h            # Mostrar ajuda
-```
-
-## 📖 Scripts Recomendados para package.json
-
-Adicione ao seu `package.json`:
-
-```json
-{
-  "scripts": {
-    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash",
-    "infra:setup:manual": "wget -q -O setup-infra.sh https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh --manual && rm setup-infra.sh",
-    "infra:setup:force": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash -s -- --force --auto",
-    "infra:up": "cd infra-db && docker-compose up -d",
-    "infra:down": "cd infra-db && docker-compose down",
-    "infra:logs": "cd infra-db && docker-compose logs -f postgres",
-    "infra:reset": "cd infra-db && docker-compose down -v && docker-compose up -d",
-    "infra:clean": "npm run infra:down && rm -rf infra-db",
-    "db:setup": "npm run infra:up && sleep 5 && npm run prisma:migrate && npm run prisma:seed",
-    "db:fresh": "npm run infra:reset && sleep 10 && npm run db:setup"
-  }
-}
-```
-
-### 🎮 **Comandos de Uso Diário**
-
-```bash
-# Setup inicial (primeira vez)
+# Setup inicial (detecta porta automaticamente)
 npm run infra:setup
 
-# Setup com controle manual (baixa scripts e executa)
-npm run infra:setup:manual
-
-# Setup forçado - regenera tudo (baixa scripts e executa)
+# Setup forçado - regenera tudo (nova porta se necessário)
 npm run infra:setup:force
+
+# Setup manual (escolha porta)
+npm run infra:setup:manual
 
 # 🧠 Atualização Inteligente (NOVO!) - atualiza scripts E package.json
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart-update.js | node
@@ -249,42 +162,190 @@ npm run infra:up          # Subir banco
 npm run infra:down        # Parar banco
 npm run infra:logs        # Ver logs
 npm run infra:reset       # Reset completo
-
-# Reset do banco (quando necessário)
-npm run db:fresh
-
-# Limpar tudo
-npm run infra:clean
+npm run infra:status      # Status dos containers
+npm run infra:psql        # Conectar via psql
 ```
 
-## 🔧 Scripts Avançados (Opcionais)
+## 🔌 Detecção Inteligente de Porta
 
-Para projetos com necessidades específicas:
+### Como Detecta
 
-```json
+O sistema analisa:
+
+- ✅ **Containers Docker PostgreSQL** ativos na máquina
+- ✅ **Arquivos `.env`** de outros projetos ANPD
+- ✅ **Arquivos `docker-compose.yml`** existentes
+- ✅ **Portas realmente disponíveis** no sistema operacional
+
+### Como Salva
+
+```bash
+.infra/port-config.json
 {
-  "scripts": {
-    "infra:setup:prod": "wget -q -O setup-infra.sh https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh && chmod +x setup-infra.sh && ./setup-infra.sh --force --db-name=meu_projeto_prod --db-user=prod_user --db-password=$PROD_DB_PASSWORD && rm setup-infra.sh",
-    "infra:setup:test": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh | bash -s -- --force --db-name=test_db --auto",
-    "infra:backup": "cd infra-db && docker-compose exec postgres pg_dump -U admin postgres > backup.sql",
-    "infra:restore": "cd infra-db && docker-compose exec -T postgres psql -U admin postgres < backup.sql"
-  }
+  "port": 5433,
+  "project": "meu-projeto",
+  "createdAt": "2025-08-11T15:30:00.000Z",
+  "updatedAt": "2025-08-11T15:30:00.000Z"
 }
 ```
 
-## 🔒 Segurança
+### Exemplo Prático
 
-- ✅ **Zero senhas hardcoded** no código
-- ✅ **Credenciais sempre únicas** por projeto/execução
-- ✅ **Bancos isolados** entre projetos
-- ✅ **Senhas geradas** com criptografia forte
+```bash
+# Primeiro projeto
+cd projeto-a
+npm run infra:setup
+# 🎯 Porta selecionada: 5432
 
-## 📚 Documentação
+# Segundo projeto (mesma VM)
+cd ../projeto-b
+npm run infra:setup
+# 🔍 Detectando porta disponível...
+# 📊 Portas PostgreSQL já em uso: 5432
+# 🎯 Porta selecionada: 5433
 
-- **[COMO USAR](REPLICAR-EM-PROJETOS.md)** - Guia completo de uso
-- **[SCRIPTS PACKAGE.JSON](SCRIPTS-PACKAGE-JSON.md)** - Templates prontos para diferentes projetos
-- **[docs/](docs/)** - Documentação técnica detalhada
+# Terceiro projeto (mesma VM)
+cd ../projeto-c
+npm run infra:setup
+# 🔍 Detectando porta disponível...
+# 📊 Portas PostgreSQL já em uso: 5432, 5433
+# 🎯 Porta selecionada: 5434
+```
 
----
+## 🔧 Modos de Execução
 
-**Uma infraestrutura. Todos os projetos ANPD. Zero configuração manual.** 🎉
+### 🤖 **Modo Automático (Recomendado)**
+
+```bash
+npm run infra:setup
+```
+
+- ✅ Detecta credenciais existentes e preserva
+- ✅ **Detecta porta disponível automaticamente**
+- ✅ Gera senha segura se não existir
+- ✅ Zero interação necessária
+
+### ✏️ **Modo Manual (Controle Total)**
+
+```bash
+npm run infra:setup:manual
+```
+
+- ✅ Pergunta cada configuração
+- ✅ **Permite escolher porta específica**
+- ✅ Controle total sobre credenciais
+
+### 💪 **Modo Força (Reset Completo)**
+
+```bash
+npm run infra:setup:force
+```
+
+- ✅ Regenera tudo do zero
+- ✅ **Nova detecção de porta**
+- ✅ Novas credenciais seguras
+- ✅ Sobrescreve configuração existente
+
+## 🧪 Exemplo Completo (Múltiplos Projetos)
+
+### VM com 3 Projetos
+
+```bash
+# Projeto 1: backlog-dim
+cd /home/anpdadmin/backlog-dim
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+npm run infra:setup
+# 🎯 Porta: 5432
+
+# Projeto 2: controladores-api
+cd /home/anpdadmin/controladores-api
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+npm run infra:setup
+# 🎯 Porta: 5433 (detectado automaticamente!)
+
+# Projeto 3: transparencia
+cd /home/anpdadmin/transparencia
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+npm run infra:setup
+# 🎯 Porta: 5534 (detectado automaticamente!)
+```
+
+### Resultado
+
+```bash
+# Containers isolados rodando simultaneamente
+docker ps --filter "name=postgres"
+
+CONTAINER ID   IMAGE         PORTS                    NAMES
+abc123def456   postgres:15   0.0.0.0:5432->5432/tcp   backlog_dim-postgres
+def456ghi789   postgres:15   0.0.0.0:5433->5432/tcp   controladores_api-postgres
+ghi789jkl012   postgres:15   0.0.0.0:5434->5432/tcp   transparencia-postgres
+```
+
+### Arquivos .env Gerados
+
+```bash
+# backlog-dim/.env
+DATABASE_URL="postgresql://dev_user:ABC123@localhost:5432/backlog_dim_dev"
+
+# controladores-api/.env
+DATABASE_URL="postgresql://dev_user:XYZ789@localhost:5433/controladores_api_dev"
+
+# transparencia/.env
+DATABASE_URL="postgresql://dev_user:DEF456@localhost:5434/transparencia_dev"
+```
+
+## 🚨 Solução de Problemas
+
+### Erro: "Port already in use"
+
+```bash
+# 1. Ver diagnóstico completo
+npm run infra:debug
+
+# 2. Forçar nova detecção de porta
+npm run infra:setup:force
+
+# 3. Verificar containers ativos
+docker ps --filter "name=postgres"
+```
+
+### Erro: "Authentication failed"
+
+```bash
+# 1. Diagnosticar credenciais
+npm run infra:debug
+
+# 2. Corrigir automaticamente
+npm run infra:fix
+
+# 3. Testar Prisma
+npx prisma migrate dev
+```
+
+### Script não encontrado: "infra:fix"
+
+```bash
+# Atualização inteligente (adiciona scripts novos ao package.json)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart-update.js | node
+
+# Agora deve funcionar
+npm run infra:fix
+```
+
+## 🎊 Benefícios v2.0
+
+- ✅ **Zero Configuração Manual** - Tudo automatizado
+- ✅ **🆕 Múltiplos Projetos** - Detecção inteligente de porta sem conflitos
+- ✅ **🆕 Isolamento Total** - Containers, redes e volumes únicos por projeto
+- ✅ **Segurança** - Senhas geradas com crypto.randomBytes()
+- ✅ **Cross-Platform** - Windows, macOS, Linux
+- ✅ **🆕 Atualização Inteligente** - Smart update que adiciona comandos novos
+- ✅ **🆕 Diagnóstico Avançado** - infra:debug e infra:fix
+- ✅ **Configuração Persistente** - Lembra da porta em próximas execuções
+
+## 🤝 Suporte e Contribuição
+
+- **[Issues](https://github.com/anpdgovbr/docker-infra-pg/issues)** - Reportar bugs ou sugerir melhorias
+- **[Discussions](https://github.com/anpdgovbr/docker-infra-pg/discussions)** - Tirar dúvidas e discutir ideias
+- **[Documentação Completa](./docs/index.md)** - Índice de toda documentação disponível

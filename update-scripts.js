@@ -36,7 +36,12 @@ function isESModuleProject() {
 const REPO_BASE =
   'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main'
 
-const SCRIPTS = ['setup-cross-platform.js', 'docker-helper.js', 'db-helper.js']
+const SCRIPTS = [
+  'setup-cross-platform.js',
+  'docker-helper.js',
+  'db-helper.js',
+  'port-manager.js'
+]
 
 // Download de um script
 function downloadScript(scriptName, targetPath) {

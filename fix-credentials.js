@@ -42,31 +42,67 @@ function readEnvFile(filePath) {
   }
 }
 
-// Gera docker-compose.yml com credenciais corretas
-function generateDockerCompose(dbName, dbUser, dbPassword) {
+// Gera docker-compose.yml com credenciais corretas e porta inteligente
+function generateDockerCompose(dbName, dbUser, dbPassword, dbPort = 5432) {
+  const projectName = path
+    .basename(process.cwd())
+    .replace(/[@\/]/g, '')
+    .replace(/-/g, '_')
+
   return `version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: ${path.basename(process.cwd())}-postgres
+    container_name: ${projectName}-postgres
     environment:
       POSTGRES_DB: \${POSTGRES_DB:-${dbName}}
       POSTGRES_USER: \${POSTGRES_USER:-${dbUser}}
       POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-${dbPassword}}
     ports:
-      - "5432:5432"
+      - "${dbPort}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - ${path.basename(process.cwd())}_network
+      - ${projectName}_network
 
 volumes:
   postgres_data:
 
 networks:
-  ${path.basename(process.cwd())}_network:
+  ${projectName}_network:
     driver: bridge
 `
+}
+
+// Obtém porta inteligente
+async function getSmartPort() {
+  try {
+    // Tenta usar port manager local
+    const portManagerPath = path.join('.infra', 'port-manager.js')
+    if (fs.existsSync(portManagerPath)) {
+      const portManager = require(path.resolve(portManagerPath))
+      return await portManager.getSmartPort(false)
+    }
+
+    // Tenta usar versão existente no docker-compose.yml
+    const dockerComposePath = path.join('infra-db', 'docker-compose.yml')
+    if (fs.existsSync(dockerComposePath)) {
+      const dockerContent = fs.readFileSync(dockerComposePath, 'utf8')
+      const portMatch = dockerContent.match(/- "(\d+):5432"/)
+      if (portMatch) {
+        return parseInt(portMatch[1])
+      }
+    }
+
+    // Usa porta padrão
+    return 5432
+  } catch (error) {
+    log(
+      `⚠️  Usando porta padrão 5432 (erro na detecção: ${error.message})`,
+      'yellow'
+    )
+    return 5432
+  }
 }
 
 async function main() {
@@ -140,6 +176,11 @@ async function main() {
       'reset'
     )
 
+    // Detecta porta inteligente
+    log('🔍 Detectando porta...', 'blue')
+    const dbPort = await getSmartPort()
+    log(`  Port: ${dbPort}`, 'reset')
+
     // Para containers existentes
     log('🛑 Parando containers existentes...', 'yellow')
     try {
@@ -148,12 +189,16 @@ async function main() {
       log('⚠️  Nenhum container para parar', 'yellow')
     }
 
-    // Gera novo docker-compose.yml
-    log('📝 Gerando docker-compose.yml com credenciais corretas...', 'blue')
+    // Gera novo docker-compose.yml com porta inteligente
+    log(
+      '📝 Gerando docker-compose.yml com credenciais e porta corretas...',
+      'blue'
+    )
     const dockerComposeContent = generateDockerCompose(
       dbName,
       dbUser,
-      dbPassword
+      dbPassword,
+      dbPort
     )
     fs.writeFileSync(dockerComposePath, dockerComposeContent)
 
@@ -164,8 +209,8 @@ POSTGRES_DB=${dbName}
 POSTGRES_USER=${dbUser}
 POSTGRES_PASSWORD=${dbPassword}
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-DATABASE_URL="postgresql://${dbUser}:${dbPassword}@localhost:5432/${dbName}"
+POSTGRES_PORT=${dbPort}
+DATABASE_URL="postgresql://${dbUser}:${dbPassword}@localhost:${dbPort}/${dbName}"
 `
     fs.writeFileSync(infraEnvPath, infraEnvContent)
 
@@ -175,6 +220,10 @@ DATABASE_URL="postgresql://${dbUser}:${dbPassword}@localhost:5432/${dbName}"
 
     log('', 'reset')
     log('✅ Credenciais corrigidas com sucesso!', 'green')
+    log('', 'reset')
+    log('📋 Configuração final:', 'blue')
+    log(`  🔌 Porta: ${dbPort}`, 'reset')
+    log(`  🗄️  Database: ${dbName}`, 'reset')
     log('', 'reset')
     log('🧪 Agora teste o Prisma:', 'blue')
     log('  npx prisma migrate dev', 'yellow')

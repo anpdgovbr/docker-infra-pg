@@ -1,404 +1,374 @@
 #!/usr/bin/env node
 
-/**
- * Cross-Platform Setup Script
- * Funciona em Windows, macOS e Linux
- */
-
 const fs = require('fs')
 const path = require('path')
-const https = require('https')
-const { execSync, spawn } = require('child_process')
-const os = require('os')
+const { execSync } = require('child_process')
+const crypto = require('crypto')
 
-const SCRIPT_URL =
-  'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-infra.sh'
+// Verificar se port-manager.js existe e baixar se necessário
+async function ensurePortManager() {
+  const portManagerPath = path.join(__dirname, 'port-manager.js')
 
-// Detecta a plataforma
-const isWindows = os.platform() === 'win32'
-const isMacOS = os.platform() === 'darwin'
-const isLinux = os.platform() === 'linux'
+  if (!fs.existsSync(portManagerPath)) {
+    console.log('🔄 Baixando port-manager.js...')
+    try {
+      const https = require('https')
+      const url =
+        'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/port-manager.js'
 
-// Cores para output
-const colors = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  reset: '\x1b[0m'
-}
-
-function log(message, color = 'reset') {
-  console.log(`${colors[color]}${message}${colors.reset}`)
-}
-
-// Download do script
-function downloadScript() {
-  return new Promise((resolve, reject) => {
-    https
-      .get(SCRIPT_URL, (response) => {
-        let data = ''
-        response.on('data', (chunk) => (data += chunk))
-        response.on('end', () => {
-          // Criar pasta .infra se não existir
-          const infraDir = path.join(process.cwd(), '.infra')
-          if (!fs.existsSync(infraDir)) {
-            fs.mkdirSync(infraDir, { recursive: true })
-          }
-
-          // Salvar script na pasta .infra em vez da raiz
-          const scriptPath = path.join(infraDir, 'setup-infra.sh')
-          fs.writeFileSync(scriptPath, data)
-
-          // No Unix, dar permissão de execução
-          if (!isWindows) {
-            try {
-              execSync(`chmod +x "${scriptPath}"`)
-            } catch (error) {
-              log(
-                `Aviso: Não foi possível dar permissão de execução: ${error.message}`,
-                'yellow'
-              )
-            }
-          }
-
-          resolve(scriptPath)
-        })
+      await new Promise((resolve, reject) => {
+        https
+          .get(url, (res) => {
+            let data = ''
+            res.on('data', (chunk) => (data += chunk))
+            res.on('end', () => {
+              fs.writeFileSync(portManagerPath, data)
+              console.log('✅ port-manager.js baixado com sucesso!')
+              resolve()
+            })
+            res.on('error', reject)
+          })
+          .on('error', reject)
       })
-      .on('error', reject)
-  })
+    } catch (error) {
+      console.warn(
+        '⚠️  Não foi possível baixar port-manager.js, usando detecção básica de porta'
+      )
+      return false
+    }
+  }
+
+  return true
 }
 
-// Converte caminho Windows para formato Unix (para Git Bash)
-function convertToUnixPath(windowsPath) {
-  if (!isWindows) return windowsPath
+// Função para detectar porta inteligente (fallback local se port-manager não estiver disponível)
+async function getSmartPort() {
+  const hasPortManager = await ensurePortManager()
 
-  // Converte C:\path\to\file para /c/path/to/file
-  return windowsPath
-    .replace(/^([A-Z]):\\/, '/$1/')
-    .replace(/\\/g, '/')
-    .toLowerCase()
+  if (hasPortManager) {
+    try {
+      const portManager = require('./port-manager.js')
+      return await portManager.getSmartPort()
+    } catch (error) {
+      console.warn(
+        '⚠️  Erro ao usar port-manager.js, usando detecção básica:',
+        error.message
+      )
+    }
+  }
+
+  // Fallback: detecção básica de porta
+  const net = require('net')
+
+  const isPortAvailable = (port) => {
+    return new Promise((resolve) => {
+      const server = net.createServer()
+      server.listen(port, () => {
+        server.once('close', () => resolve(true))
+        server.close()
+      })
+      server.on('error', () => resolve(false))
+    })
+  }
+
+  // Testa portas comuns PostgreSQL
+  for (let port = 5432; port <= 5450; port++) {
+    if (await isPortAvailable(port)) {
+      console.log(`🎯 Porta ${port} disponível (detecção básica)`)
+      return port
+    }
+  }
+
+  console.warn('⚠️  Nenhuma porta padrão disponível, usando 5432')
+  return 5432
 }
 
-// Executa comandos Docker diretamente (sem bash)
-async function executeDockerCommands(args = []) {
+// Função para detectar configurações do projeto
+function detectProjectConfig() {
+  const projectRoot = process.cwd()
+
+  // Ler package.json
+  const packageJsonPath = path.join(projectRoot, 'package.json')
+  if (!fs.existsSync(packageJsonPath)) {
+    console.error(
+      '❌ package.json não encontrado. Este comando deve ser executado na raiz do projeto.'
+    )
+    process.exit(1)
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+  const projectName = packageJson.name || path.basename(projectRoot)
+
+  // Ler .env se existir
+  const envPath = path.join(projectRoot, '.env')
+  let envConfig = {}
+
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8')
+    envContent.split('\n').forEach((line) => {
+      const [key, ...valueParts] = line.split('=')
+      if (key && valueParts.length > 0) {
+        envConfig[key.trim()] = valueParts
+          .join('=')
+          .trim()
+          .replace(/^["']|["']$/g, '')
+      }
+    })
+  }
+
+  return { projectName, envConfig, packageJson }
+}
+
+// Função para gerar senha segura
+function generateSecurePassword() {
+  return crypto.randomBytes(16).toString('hex')
+}
+
+// Função para extrair dados da DATABASE_URL
+function parseDatabaseUrl(databaseUrl) {
+  if (!databaseUrl) return {}
+
   try {
-    log('🐳 Executando comandos Docker diretamente...', 'yellow')
-
-    // Processa argumentos
-    const isManual = args.includes('--manual')
-    const isForce = args.includes('--force')
-    const isAuto = args.includes('--auto')
-
-    // Verifica se Docker está disponível
-    execSync('docker --version', { stdio: 'ignore' })
-    log('✅ Docker encontrado', 'green')
-
-    // Verifica se Docker Compose está disponível
-    execSync('docker compose version', { stdio: 'ignore' })
-    log('✅ Docker Compose encontrado', 'green')
-
-    // Cria pasta infra-db se não existir
-    const infraDbPath = path.join(process.cwd(), 'infra-db')
-    if (!fs.existsSync(infraDbPath)) {
-      fs.mkdirSync(infraDbPath, { recursive: true })
-      log('✅ Pasta infra-db criada', 'green')
+    const url = new URL(databaseUrl)
+    return {
+      username: url.username,
+      password: url.password,
+      host: url.hostname,
+      port: url.port || '5432',
+      database: url.pathname.slice(1).split('?')[0]
     }
+  } catch {
+    return {}
+  }
+}
 
-    // Verifica se já existe configuração e se deve sobrescrever
-    const dockerComposePath = path.join(infraDbPath, 'docker-compose.yml')
-    const infraEnvPath = path.join(infraDbPath, '.env')
+// Função para criar docker-compose.yml
+function createDockerCompose(config) {
+  const { projectName, port, dbName, username, password } = config
 
-    if (
-      !isForce &&
-      (fs.existsSync(dockerComposePath) || fs.existsSync(infraEnvPath))
-    ) {
-      log(
-        '⚠️  Infraestrutura já existe. Use --force para sobrescrever',
-        'yellow'
-      )
-      return
-    }
+  // Nome do container e network únicos por projeto
+  const containerName = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}-postgres`
+  const networkName = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_network`
+  const volumeName = `${projectName.replace(
+    /[^a-zA-Z0-9]/g,
+    '_'
+  )}_postgres_data`
 
-    // Função para gerar senha segura
-    const generateSecurePassword = () => {
-      const chars =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
-      let password = ''
-      for (let i = 0; i < 16; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length))
-      }
-      return password
-    }
+  const dockerComposeContent = `version: '3.8'
 
-    // Lê .env do projeto para detectar valores existentes
-    const projectEnvPath = path.join(process.cwd(), '.env')
-    let existingEnvVars = {}
-
-    if (fs.existsSync(projectEnvPath)) {
-      const envContent = fs.readFileSync(projectEnvPath, 'utf8')
-      envContent.split('\n').forEach((line) => {
-        const [key, value] = line.split('=')
-        if (key && value) {
-          existingEnvVars[key.trim()] = value.replace(/"/g, '').trim()
-        }
-      })
-      log('📖 Lendo variáveis existentes do .env do projeto', 'blue')
-    }
-
-    // Valores padrão baseados no nome do projeto
-    const projectName = path
-      .basename(process.cwd())
-      .replace(/[@\/]/g, '')
-      .replace(/-/g, '_')
-
-    // Com --force, sempre gera valores novos. Sem --force, preserva existentes
-    let dbName = isForce
-      ? `${projectName}_dev`
-      : existingEnvVars.POSTGRES_DB || `${projectName}_dev`
-    let dbUser = isForce
-      ? 'dev_user'
-      : existingEnvVars.POSTGRES_USER || 'dev_user'
-    let dbPassword = isForce
-      ? generateSecurePassword()
-      : existingEnvVars.POSTGRES_PASSWORD || generateSecurePassword()
-
-    // Modo manual: perguntar ao usuário
-    if (isManual) {
-      const readline = require('readline')
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      })
-
-      const question = (prompt) =>
-        new Promise((resolve) => rl.question(prompt, resolve))
-
-      log(
-        '\n🔧 Modo manual ativado - Configure as variáveis do banco:',
-        'yellow'
-      )
-
-      const inputDbName = await question(`📁 Nome do banco [${dbName}]: `)
-      if (inputDbName.trim()) dbName = inputDbName.trim()
-
-      const inputDbUser = await question(`👤 Usuário do banco [${dbUser}]: `)
-      if (inputDbUser.trim()) dbUser = inputDbUser.trim()
-
-      const inputDbPassword = await question(
-        `🔒 Senha do banco [${dbPassword}]: `
-      )
-      if (inputDbPassword.trim()) dbPassword = inputDbPassword.trim()
-
-      rl.close()
-
-      log('\n✅ Configuração manual concluída!', 'green')
-    } else if (isAuto) {
-      // Modo automático: usar valores calculados (com senha segura)
-      log('🤖 Modo automático - usando valores padrão com senha segura', 'blue')
-    } else {
-      // Modo padrão: detecta se já tem configuração
-      if (!isForce && !existingEnvVars.POSTGRES_DB) {
-        log(
-          '⚠️  Primeira configuração detectada. Use --manual para configurar interativamente ou --auto para usar padrões',
-          'yellow'
-        )
-        log(
-          '💡 Usando valores padrão com senha segura gerada automaticamente',
-          'blue'
-        )
-      }
-    }
-
-    // Cria docker-compose.yml
-    const dockerComposeContent = `version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: postgres-dev
+    container_name: ${containerName}
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: \${POSTGRES_DB:-${dbName}}
-      POSTGRES_USER: \${POSTGRES_USER:-${dbUser}}
-      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${username}
+      POSTGRES_PASSWORD: ${password}
+      POSTGRES_DB: ${dbName}
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "${port}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${volumeName}:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
     networks:
-      - dev_network
+      - ${networkName}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${username} -d ${dbName}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
-  postgres_data:
+  ${volumeName}:
+    name: ${volumeName}
 
 networks:
-  dev_network:
+  ${networkName}:
+    name: ${networkName}
     driver: bridge
 `
 
-    fs.writeFileSync(dockerComposePath, dockerComposeContent)
-    log('✅ docker-compose.yml criado', 'green')
+  return dockerComposeContent
+}
 
-    // Cria/atualiza .env da infraestrutura
-    const infraEnvContent = `# PostgreSQL Configuration
-POSTGRES_DB=${dbName}
-POSTGRES_USER=${dbUser}
-POSTGRES_PASSWORD=${dbPassword}
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-DATABASE_URL="postgresql://${dbUser}:${dbPassword}@localhost:5432/${dbName}"
+// Função para criar script de inicialização
+function createInitScript(config) {
+  const { dbName, username } = config
+
+  return `#!/bin/bash
+set -e
+
+echo "🔄 Configurando banco de dados ${dbName}..."
+
+# Criar usuário se não existir
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    DO
+    \\$\\$
+    BEGIN
+        IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${username}') THEN
+            CREATE USER ${username} WITH ENCRYPTED PASSWORD '${config.password}';
+        END IF;
+    END
+    \\$\\$;
+    
+    -- Garantir que o usuário tem permissões no banco
+    GRANT ALL PRIVILEGES ON DATABASE ${dbName} TO ${username};
+    
+    -- Se estivermos no PostgreSQL 15+, garantir permissões no schema public
+    \\c ${dbName}
+    GRANT ALL ON SCHEMA public TO ${username};
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${username};
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${username};
+EOSQL
+
+echo "✅ Banco de dados ${dbName} configurado com sucesso!"
 `
+}
 
-    fs.writeFileSync(infraEnvPath, infraEnvContent)
-    log('✅ .env da infraestrutura criado', 'green')
+// Função para atualizar .env
+function updateEnvFile(config) {
+  const { projectName, port, dbName, username, password } = config
+  const projectRoot = process.cwd()
+  const envPath = path.join(projectRoot, '.env')
 
-    // Sincroniza com .env do projeto (preserva outras variáveis)
-    let projectEnvContent = ''
-    if (fs.existsSync(projectEnvPath)) {
-      projectEnvContent = fs.readFileSync(projectEnvPath, 'utf8')
-    }
+  const databaseUrl = `postgresql://${username}:${password}@localhost:${port}/${dbName}?schema=public`
 
-    // Atualiza ou adiciona variáveis do PostgreSQL
-    const updateEnvVar = (content, key, value) => {
-      const regex = new RegExp(`^${key}=.*$`, 'm')
-      if (regex.test(content)) {
-        return content.replace(regex, `${key}=${value}`)
-      } else {
-        return content + `\n${key}=${value}`
+  let envContent = ''
+  let existingEnv = {}
+
+  // Ler .env existente
+  if (fs.existsSync(envPath)) {
+    const currentContent = fs.readFileSync(envPath, 'utf8')
+    envContent = currentContent
+
+    // Parse existing env
+    currentContent.split('\n').forEach((line) => {
+      const [key, ...valueParts] = line.split('=')
+      if (key && valueParts.length > 0) {
+        existingEnv[key.trim()] = valueParts.join('=').trim()
       }
-    }
+    })
+  }
 
-    projectEnvContent = updateEnvVar(projectEnvContent, 'POSTGRES_DB', dbName)
-    projectEnvContent = updateEnvVar(projectEnvContent, 'POSTGRES_USER', dbUser)
-    projectEnvContent = updateEnvVar(
-      projectEnvContent,
-      'POSTGRES_PASSWORD',
-      dbPassword
-    )
-    projectEnvContent = updateEnvVar(
-      projectEnvContent,
-      'POSTGRES_HOST',
-      'localhost'
-    )
-    projectEnvContent = updateEnvVar(projectEnvContent, 'POSTGRES_PORT', '5432')
-    projectEnvContent = updateEnvVar(
-      projectEnvContent,
-      'DATABASE_URL',
-      `"postgresql://${dbUser}:${dbPassword}@localhost:5432/${dbName}"`
-    )
+  // Atualizar ou adicionar variáveis
+  const envVars = {
+    POSTGRES_DB: dbName,
+    POSTGRES_USER: username,
+    POSTGRES_PASSWORD: password,
+    DATABASE_URL: `"${databaseUrl}"`
+  }
 
-    fs.writeFileSync(projectEnvPath, projectEnvContent)
-    log('✅ .env do projeto sincronizado', 'green')
-
-    log('✅ Infraestrutura configurada com sucesso!', 'green')
-  } catch (error) {
-    if (error.message.includes('docker')) {
-      throw new Error(
-        'Docker não encontrado. Instale o Docker Desktop: https://www.docker.com/products/docker-desktop'
-      )
+  Object.entries(envVars).forEach(([key, value]) => {
+    const regex = new RegExp(`^${key}=.*$`, 'm')
+    if (envContent.match(regex)) {
+      envContent = envContent.replace(regex, `${key}=${value}`)
     } else {
-      throw error
+      envContent += `${
+        envContent && !envContent.endsWith('\n') ? '\n' : ''
+      }${key}=${value}\n`
     }
-  }
-}
-
-// Executa o script
-async function executeScript(scriptPath, args = []) {
-  // No Windows, usar comandos Docker diretos em vez de bash
-  if (isWindows) {
-    await executeDockerCommands(args)
-    return
-  }
-
-  // Para macOS e Linux, usar o método original com bash
-  return new Promise((resolve, reject) => {
-    let command, commandArgs
-
-    // macOS e Linux
-    command = 'bash'
-    commandArgs = [scriptPath, ...args]
-
-    log(`Executando: ${command} ${commandArgs.join(' ')}`, 'blue')
-
-    const child = spawn(command, commandArgs, {
-      stdio: 'inherit',
-      shell: isWindows
-    })
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`Script falhou com código: ${code}`))
-      }
-    })
-
-    child.on('error', reject)
   })
-}
 
-// Limpeza
-function cleanup(scriptPath) {
-  try {
-    fs.unlinkSync(scriptPath)
-  } catch (error) {
-    log(
-      `Aviso: Não foi possível remover script temporário: ${error.message}`,
-      'yellow'
-    )
-  }
-}
+  fs.writeFileSync(envPath, envContent)
 
-// Sleep cross-platform
-function sleep(seconds) {
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
+  return databaseUrl
 }
 
 // Função principal
 async function main() {
-  const args = process.argv.slice(2)
-  const isForce = args.includes('--force')
+  console.log(
+    '🚀 Configurando infraestrutura PostgreSQL com detecção inteligente de porta...\n'
+  )
 
   try {
-    log('🚀 Configurando infraestrutura PostgreSQL (Cross-Platform)', 'green')
-    log(`📊 Plataforma detectada: ${os.platform()} ${os.arch()}`, 'blue')
+    // Detectar configuração do projeto
+    const { projectName, envConfig } = detectProjectConfig()
+    console.log(`📦 Projeto detectado: ${projectName}`)
 
-    // Usar implementação Node.js quando --force é usado (para garantir lógica nova)
-    if (isWindows || isForce) {
-      // Usar comandos Docker diretos (nova implementação)
-      log('🔧 Executando configuração...', 'yellow')
-      await executeDockerCommands(args)
-      log('✅ Configuração concluída!', 'green')
-    } else {
-      // Para macOS e Linux, usar o método original com bash
-      // Download do script
-      log('⬇️  Baixando script de setup...', 'yellow')
-      const scriptPath = await downloadScript()
-      log('✅ Script baixado com sucesso!', 'green')
+    // Detectar porta inteligente
+    console.log('🔍 Detectando porta disponível...')
+    const port = await getSmartPort()
 
-      // Execução
-      log('🔧 Executando configuração...', 'yellow')
-      await executeScript(scriptPath, args)
-      log('✅ Configuração concluída!', 'green')
+    // Extrair dados existentes da DATABASE_URL
+    const existingDb = parseDatabaseUrl(envConfig.DATABASE_URL)
 
-      // Limpeza
-      cleanup(scriptPath)
+    // Configuração do banco
+    const dbConfig = {
+      projectName,
+      port,
+      dbName:
+        existingDb.database ||
+        envConfig.POSTGRES_DB ||
+        `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_dev`,
+      username: existingDb.username || envConfig.POSTGRES_USER || 'dev_user',
+      password:
+        existingDb.password ||
+        envConfig.POSTGRES_PASSWORD ||
+        generateSecurePassword()
     }
+
+    console.log('📋 Configuração final:')
+    console.log(`   🎯 Porta: ${dbConfig.port}`)
+    console.log(`   🗄️  Banco: ${dbConfig.dbName}`)
+    console.log(`   👤 Usuário: ${dbConfig.username}`)
+    console.log(`   🔐 Senha: ${'*'.repeat(dbConfig.password.length)}`)
+
+    // Criar pasta infra-db se não existir
+    const infraPath = path.join(process.cwd(), 'infra-db')
+    if (!fs.existsSync(infraPath)) {
+      fs.mkdirSync(infraPath, { recursive: true })
+    }
+
+    // Criar pasta init se não existir
+    const initPath = path.join(infraPath, 'init')
+    if (!fs.existsSync(initPath)) {
+      fs.mkdirSync(initPath, { recursive: true })
+    }
+
+    // Criar arquivos
+    console.log('\n📝 Criando arquivos...')
+
+    // docker-compose.yml
+    const dockerComposePath = path.join(infraPath, 'docker-compose.yml')
+    fs.writeFileSync(dockerComposePath, createDockerCompose(dbConfig))
+    console.log('✅ docker-compose.yml criado')
+
+    // Script de inicialização
+    const initScriptPath = path.join(initPath, '01-create-app-database.sh')
+    fs.writeFileSync(initScriptPath, createInitScript(dbConfig))
+    console.log('✅ Script de inicialização criado')
+
+    // Atualizar .env
+    const databaseUrl = updateEnvFile(dbConfig)
+    console.log('✅ .env atualizado')
+
+    console.log('\n🎉 Infraestrutura configurada com sucesso!')
+    console.log('\n📋 Próximos passos:')
+    console.log('   1. cd infra-db')
+    console.log('   2. docker-compose up -d')
+    console.log('   3. Aguarde ~30s para inicialização completa')
+    console.log(`   4. Teste a conexão: psql "${databaseUrl}"`)
+    console.log('   5. Execute suas migrations/seeds')
+
+    console.log('\n🔗 DATABASE_URL configurada:')
+    console.log(`   ${databaseUrl}`)
   } catch (error) {
-    log(`❌ Erro: ${error.message}`, 'red')
+    console.error('❌ Erro durante a configuração:', error.message)
     process.exit(1)
   }
 }
 
-// Executar apenas se chamado diretamente
+// Executar se chamado diretamente
 if (require.main === module) {
   main()
 }
 
 module.exports = {
-  downloadScript,
-  executeScript,
-  sleep,
-  isWindows,
-  isMacOS,
-  isLinux
+  getSmartPort,
+  detectProjectConfig,
+  createDockerCompose,
+  updateEnvFile
 }
