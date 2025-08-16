@@ -36,7 +36,7 @@ function readEnvFile(filePath) {
     })
 
     return vars
-  } catch (error) {
+  } catch {
     return null
   }
 }

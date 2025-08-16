@@ -41,17 +41,13 @@ function isPortAvailable(port) {
   })
 }
 
-// Busca portas PostgreSQL já em uso por outros projetos ANPD
-function findUsedPostgresPorts() {
+function getDockerPostgresPorts() {
   const usedPorts = new Set()
-
   try {
-    // Busca containers Docker PostgreSQL ativos
     const dockerOutput = execSync(
       'docker ps --format "table {{.Names}}\\t{{.Ports}}" --filter "ancestor=postgres"',
       { encoding: 'utf8', stdio: 'pipe' }
     )
-
     const lines = dockerOutput.split('\n')
     for (const line of lines) {
       const portMatch = line.match(/(\d+)->5432\/tcp/)
@@ -60,7 +56,67 @@ function findUsedPostgresPorts() {
       }
     }
   } catch (error) {
-    // Ignora erro se Docker não estiver disponível ou não houver containers
+    log(`(debug) Erro ao obter portas do Docker: ${error.message}`, 'yellow')
+  }
+  return usedPorts
+}
+
+function getProjectPortsFromEnv(envPath) {
+  const ports = []
+  if (fs.existsSync(envPath)) {
+    try {
+      const envContent = fs.readFileSync(envPath, 'utf8')
+      const portMatch = envContent.match(/DATABASE_URL="[^"]*:(\d+)\//)
+      if (portMatch) {
+        ports.push(parseInt(portMatch[1]))
+      }
+    } catch (error) {
+      log(`(debug) Erro ao ler .env em ${envPath}: ${error.message}`, 'yellow')
+    }
+  }
+  return ports
+}
+
+function getProjectPortsFromDockerCompose(dockerComposePath) {
+  const ports = []
+  if (fs.existsSync(dockerComposePath)) {
+    try {
+      const dockerContent = fs.readFileSync(dockerComposePath, 'utf8')
+      const portMatch = dockerContent.match(/- "(\d+):5432"/)
+      if (portMatch) {
+        ports.push(parseInt(portMatch[1]))
+      }
+    } catch (error) {
+      log(`(debug) Erro ao ler docker-compose em ${dockerComposePath}: ${error.message}`, 'yellow')
+    }
+  }
+  return ports
+}
+
+function getPortsFromProjects(basePath) {
+  const ports = []
+  if (!fs.existsSync(basePath)) return ports
+  const projects = fs
+    .readdirSync(basePath, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
+  for (const project of projects) {
+    const projectPath = path.join(basePath, project)
+    const envPath = path.join(projectPath, '.env')
+    const dockerComposePath = path.join(projectPath, 'infra-db', 'docker-compose.yml')
+    ports.push(...getProjectPortsFromEnv(envPath))
+    ports.push(...getProjectPortsFromDockerCompose(dockerComposePath))
+  }
+  return ports
+}
+
+// Busca portas PostgreSQL já em uso por outros projetos ANPD
+function findUsedPostgresPorts() {
+  const usedPorts = new Set()
+
+  // Docker
+  for (const port of getDockerPostgresPorts()) {
+    usedPorts.add(port)
   }
 
   // Busca em arquivos de configuração de outros projetos ANPD
@@ -73,49 +129,13 @@ function findUsedPostgresPorts() {
       '/home/anpdadmin',
       process.cwd().replace(/[^/\\]+$/, '') // Diretório pai
     ]
-
     for (const basePath of possiblePaths) {
-      if (fs.existsSync(basePath)) {
-        const projects = fs
-          .readdirSync(basePath, { withFileTypes: true })
-          .filter(dirent => dirent.isDirectory())
-          .map(dirent => dirent.name)
-
-        for (const project of projects) {
-          const projectPath = path.join(basePath, project)
-          const envPath = path.join(projectPath, '.env')
-          const dockerComposePath = path.join(projectPath, 'infra-db', 'docker-compose.yml')
-
-          // Verifica .env
-          if (fs.existsSync(envPath)) {
-            try {
-              const envContent = fs.readFileSync(envPath, 'utf8')
-              const portMatch = envContent.match(/DATABASE_URL="[^"]*:(\d+)\//)
-              if (portMatch) {
-                usedPorts.add(parseInt(portMatch[1]))
-              }
-            } catch (error) {
-              // Ignora erro de leitura
-            }
-          }
-
-          // Verifica docker-compose.yml
-          if (fs.existsSync(dockerComposePath)) {
-            try {
-              const dockerContent = fs.readFileSync(dockerComposePath, 'utf8')
-              const portMatch = dockerContent.match(/- "(\d+):5432"/)
-              if (portMatch) {
-                usedPorts.add(parseInt(portMatch[1]))
-              }
-            } catch (error) {
-              // Ignora erro de leitura
-            }
-          }
-        }
+      for (const port of getPortsFromProjects(basePath)) {
+        usedPorts.add(port)
       }
     }
   } catch (error) {
-    // Ignora erro de busca em diretórios
+    log(`(debug) Erro ao buscar portas em diretórios: ${error.message}`, 'yellow')
   }
 
   return Array.from(usedPorts).sort((a, b) => a - b)
@@ -154,7 +174,7 @@ function getSavedPort(_projectName) {
       return config.port
     }
   } catch (error) {
-    // Ignora erro de leitura
+    log(`(debug) Erro ao ler configuração de porta: ${error.message}`, 'yellow')
   }
   return null
 }
@@ -191,7 +211,7 @@ function getProjectName() {
       return packageJson.name || path.basename(process.cwd())
     }
   } catch (error) {
-    // Ignora erro
+    log(`(debug) Erro ao detectar nome do projeto: ${error.message}`, 'yellow')
   }
 
   return path.basename(process.cwd())

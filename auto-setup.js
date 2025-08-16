@@ -42,7 +42,7 @@ function readPackageJson() {
   try {
     const content = fs.readFileSync('package.json', 'utf8')
     return JSON.parse(content)
-  } catch (error) {
+  } catch {
     throw new Error('Não foi possível ler package.json')
   }
 }

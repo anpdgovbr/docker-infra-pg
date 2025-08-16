@@ -45,7 +45,7 @@ function fixDockerCompose() {
   log('🔍 Analisando docker-compose.yml...', 'blue')
 
   // Detectar volumes inválidos (que começam com underscore)
-  const invalidVolumeRegex = /_[a-zA-Z0-9_]*_postgres_data/g
+  const invalidVolumeRegex = /_\w*_postgres_data/g
   const invalidVolumes = content.match(invalidVolumeRegex) || []
 
   if (invalidVolumes.length === 0) {
@@ -71,11 +71,11 @@ function fixDockerCompose() {
   })
 
   // Corrigir network se necessário
-  content = content.replace(/_[a-zA-Z0-9_]*_network/g, validNetworkName)
+  content = content.replace(/_\w*_network/g, validNetworkName)
 
   // Corrigir container se necessário
   content = content.replace(
-    /container_name:\s*_[a-zA-Z0-9_]*-postgres/g,
+    /container_name:\s*_\w*-postgres/g,
     `container_name: ${validContainerName}`
   )
 

@@ -79,7 +79,9 @@ function detectStackConflicts() {
 
     return false
   } catch (error) {
-    log('⚠️  Erro ao detectar conflitos. Continuando...', 'yellow')
+    log(`⚠️  Erro ao detectar conflitos: ${error.message}`, 'yellow')
+    // Opcional: log detalhado para depuração
+    // log(error.stack, 'yellow')
     return false
   }
 }
@@ -136,12 +138,15 @@ async function recreateInfrastructure() {
     log('🛑 Parando infraestrutura atual...', 'yellow')
     try {
       execSync('npm run infra:down', { stdio: 'pipe', cwd: process.cwd() })
-    } catch (error) {
+    } catch {
       // Tentar parar manualmente
       try {
         execSync('cd infra-db && docker-compose down', { stdio: 'pipe' })
       } catch (manualError) {
         log('⚠️  Infraestrutura já estava parada', 'yellow')
+        log(`Detalhe do erro: ${manualError.message}`, 'yellow')
+        // Tratar explicitamente o erro: interromper o fluxo se necessário
+        return
       }
     }
 
@@ -219,7 +224,7 @@ async function main() {
       log(`   🎯 Porta: ${port}`, 'reset')
       log(`   🏷️  Stack: ${projectName}-stack`, 'reset')
       log(`   📦 Container: ${projectName}_postgres`, 'reset')
-    } catch (envError) {
+    } catch {
       log('   ⚠️  Não foi possível ler configuração do .env', 'yellow')
     }
   } catch (error) {

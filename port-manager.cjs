@@ -41,17 +41,13 @@ function isPortAvailable(port) {
   })
 }
 
-// Busca portas PostgreSQL já em uso por outros projetos ANPD
-function findUsedPostgresPorts() {
+function getDockerPostgresPorts() {
   const usedPorts = new Set()
-
   try {
-    // Busca containers Docker PostgreSQL ativos
     const dockerOutput = execSync(
       'docker ps --format "table {{.Names}}\\t{{.Ports}}" --filter "ancestor=postgres"',
       { encoding: 'utf8', stdio: 'pipe' }
     )
-
     const lines = dockerOutput.split('\n')
     for (const line of lines) {
       const portMatch = line.match(/(\d+)->5432\/tcp/)
@@ -60,64 +56,83 @@ function findUsedPostgresPorts() {
       }
     }
   } catch (error) {
-    // Ignora erro se Docker não estiver disponível ou não houver containers
+    // Loga erro se Docker não estiver disponível ou não houver containers
+    console.error('Erro ao obter portas do Docker/Postgres:', error.message)
   }
+  return usedPorts
+}
 
-  // Busca em arquivos de configuração de outros projetos ANPD
-  try {
-    const homeDir = require('os').homedir()
-    const possiblePaths = [
-      path.join(homeDir, 'anpdgovbr'),
-      path.join(homeDir, 'projects'),
-      path.join(homeDir, 'workspace'),
-      '/home/anpdadmin',
-      process.cwd().replace(/[^/\\]+$/, '') // Diretório pai
-    ]
+function getProjectConfigPorts(basePath, usedPorts) {
+  if (!fs.existsSync(basePath)) return
+  const projects = fs
+    .readdirSync(basePath, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
 
-    for (const basePath of possiblePaths) {
-      if (fs.existsSync(basePath)) {
-        const projects = fs
-          .readdirSync(basePath, { withFileTypes: true })
-          .filter(dirent => dirent.isDirectory())
-          .map(dirent => dirent.name)
+  for (const project of projects) {
+    const projectPath = path.join(basePath, project)
+    addEnvPort(projectPath, usedPorts)
+    addDockerComposePort(projectPath, usedPorts)
+  }
+}
 
-        for (const project of projects) {
-          const projectPath = path.join(basePath, project)
-          const envPath = path.join(projectPath, '.env')
-          const dockerComposePath = path.join(projectPath, 'infra-db', 'docker-compose.yml')
-
-          // Verifica .env
-          if (fs.existsSync(envPath)) {
-            try {
-              const envContent = fs.readFileSync(envPath, 'utf8')
-              const portMatch = envContent.match(/DATABASE_URL="[^"]*:(\d+)\//)
-              if (portMatch) {
-                usedPorts.add(parseInt(portMatch[1]))
-              }
-            } catch (error) {
-              // Ignora erro de leitura
-            }
-          }
-
-          // Verifica docker-compose.yml
-          if (fs.existsSync(dockerComposePath)) {
-            try {
-              const dockerContent = fs.readFileSync(dockerComposePath, 'utf8')
-              const portMatch = dockerContent.match(/- "(\d+):5432"/)
-              if (portMatch) {
-                usedPorts.add(parseInt(portMatch[1]))
-              }
-            } catch (error) {
-              // Ignora erro de leitura
-            }
-          }
-        }
+function addEnvPort(projectPath, usedPorts) {
+  const envPath = path.join(projectPath, '.env')
+  if (fs.existsSync(envPath)) {
+    try {
+      const envContent = fs.readFileSync(envPath, 'utf8')
+      const portMatch = envContent.match(/DATABASE_URL="[^"]*:(\d+)\//)
+      if (portMatch) {
+        usedPorts.add(parseInt(portMatch[1]))
       }
+    } catch (error) {
+      // Loga erro de leitura do arquivo .env
+      console.warn(`Aviso: erro ao ler .env em ${envPath}: ${error.message}`)
+    }
+  }
+}
+
+function addDockerComposePort(projectPath, usedPorts) {
+  const dockerComposePath = path.join(projectPath, 'infra-db', 'docker-compose.yml')
+  if (fs.existsSync(dockerComposePath)) {
+    try {
+      const dockerContent = fs.readFileSync(dockerComposePath, 'utf8')
+      const portMatch = dockerContent.match(/- "(\d+):5432"/)
+      if (portMatch) {
+        usedPorts.add(parseInt(portMatch[1]))
+      }
+    } catch (error) {
+      // Loga erro de leitura do arquivo docker-compose.yml
+      console.warn(
+        `Aviso: erro ao ler docker-compose.yml em ${dockerComposePath}: ${error.message}`
+      )
+    }
+  }
+}
+
+function getPossibleBasePaths() {
+  const homeDir = require('os').homedir()
+  return [
+    path.join(homeDir, 'anpdgovbr'),
+    path.join(homeDir, 'projects'),
+    path.join(homeDir, 'workspace'),
+    '/home/anpdadmin',
+    process.cwd().replace(/[^/\\]+$/, '') // Diretório pai
+  ]
+}
+
+// Busca portas PostgreSQL já em uso por outros projetos ANPD
+function findUsedPostgresPorts() {
+  const usedPorts = getDockerPostgresPorts()
+  try {
+    const possiblePaths = getPossibleBasePaths()
+    for (const basePath of possiblePaths) {
+      getProjectConfigPorts(basePath, usedPorts)
     }
   } catch (error) {
-    // Ignora erro de busca em diretórios
+    // Loga aviso ao falhar busca em diretórios
+    console.warn(`Aviso: erro ao buscar portas em diretórios: ${error.message}`)
   }
-
   return Array.from(usedPorts).sort((a, b) => a - b)
 }
 
@@ -154,7 +169,10 @@ function getSavedPort(_projectName) {
       return config.port
     }
   } catch (error) {
-    // Ignora erro de leitura
+    // Loga aviso de erro de leitura do arquivo de configuração
+    console.warn(
+      `Aviso: erro ao ler configuração de porta em .infra/port-config.json: ${error.message}`
+    )
   }
   return null
 }
@@ -191,7 +209,8 @@ function getProjectName() {
       return packageJson.name || path.basename(process.cwd())
     }
   } catch (error) {
-    // Ignora erro
+    // Loga aviso de erro ao detectar nome do projeto
+    console.warn(`Aviso: erro ao detectar nome do projeto: ${error.message}`)
   }
 
   return path.basename(process.cwd())

@@ -37,7 +37,7 @@ function readEnvFile(filePath) {
     })
 
     return vars
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -163,10 +163,7 @@ async function main() {
     if (!dbName || !dbUser || !dbPassword) {
       dbName =
         projectEnv.POSTGRES_DB ||
-        `${path
-          .basename(process.cwd())
-          .replace(new RegExp('[@/]', 'g'), '')
-          .replace(/-/g, '_')}_dev`
+        `${path.basename(process.cwd()).replace(/[@/]/g, '').replace(/-/g, '_')}_dev`
       dbUser = projectEnv.POSTGRES_USER || 'dev_user'
       dbPassword = projectEnv.POSTGRES_PASSWORD || 'dev_password'
       log('📄 Usando credenciais das variáveis individuais:', 'blue')
@@ -187,6 +184,7 @@ async function main() {
       execSync('docker-compose down -v', { cwd: infraDbPath, stdio: 'inherit' })
     } catch (error) {
       log('⚠️  Nenhum container para parar', 'yellow')
+      log(`Detalhes do erro: ${error.message}`, 'yellow')
     }
 
     // Gera novo docker-compose.yml com porta inteligente

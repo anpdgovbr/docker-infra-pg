@@ -81,10 +81,10 @@ const commands = {
     // 1. Garantir que a infraestrutura está rodando
     const dockerHelper = require('./docker-helper.js')
     try {
-      await dockerHelper.up()
+      dockerHelper.up()
     } catch {
       log('⚠️  Infraestrutura não estava rodando, iniciando...', 'yellow')
-      await dockerHelper.up()
+      dockerHelper.up()
     }
 
     // 2. Aguardar o banco estar pronto
