@@ -1,8 +1,8 @@
 [![License](https://img.shields.io/github/license/anpdgovbr/docker-infra-pg)](https://github.com/anpdgovbr/docker-infra-pg/blob/main/LICENSE)
-[![Issues](https://img.shields.io/github/issues/anpdgovbr/docker-infra-pg)](https://github.com/anpdgovbr/docker-infra-pg/issues)
-[![Stars](https://img.shields.io/github/stars/anpdgovbr/docker-infra-pg?style=social)](https://github.com/anpdgovbr/docker-infra-pg/stargazers)
 [![Repo size](https://img.shields.io/github/repo-size/anpdgovbr/docker-infra-pg)](https://github.com/anpdgovbr/docker-infra-pg)
 [![Node >=14](https://img.shields.io/badge/node-%3E%3D14-brightgreen)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/docker-%20-blue?logo=docker)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/postgresql-%3E%3D13-blue?logo=postgresql)](https://www.postgresql.org/)
 
 ---
 
