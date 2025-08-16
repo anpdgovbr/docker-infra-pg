@@ -119,6 +119,8 @@ async function updatePackageJsonScripts(extension) {
     const currentInfraScripts = generateInfraScripts(extension)
     let addedCount = 0
     let updatedCount = 0
+    const addedScripts = []
+    const updatedScripts = []
 
     log('🔍 Verificando scripts no package.json...', 'blue')
 
@@ -128,11 +130,13 @@ async function updatePackageJsonScripts(extension) {
         // Script novo - adiciona
         packageJson.scripts[scriptName] = scriptCommand
         addedCount++
+        addedScripts.push(scriptName)
         log(`➕ Novo script: ${scriptName}`, 'green')
       } else if (packageJson.scripts[scriptName] !== scriptCommand) {
         // Script existe mas está desatualizado - atualiza
         packageJson.scripts[scriptName] = scriptCommand
         updatedCount++
+        updatedScripts.push(scriptName)
         log(`🔄 Script atualizado: ${scriptName}`, 'yellow')
       }
     }
@@ -151,10 +155,10 @@ async function updatePackageJsonScripts(extension) {
       log('✅ Todos os scripts já estão atualizados no package.json', 'green')
     }
 
-    return { addedCount, updatedCount }
+    return { addedCount, updatedCount, addedScripts, updatedScripts }
   } catch (error) {
     log(`⚠️  Erro ao atualizar package.json: ${error.message}`, 'yellow')
-    return { addedCount: 0, updatedCount: 0 }
+    return { addedCount: 0, updatedCount: 0, addedScripts: [], updatedScripts: [] }
   }
 }
 
@@ -215,7 +219,8 @@ async function main() {
 
     const downloadResults = await downloadAllScripts(SCRIPTS, infraDir, extension)
 
-    const { addedCount, updatedCount } = await updatePackageJsonScripts(extension)
+    const { addedCount, updatedCount, addedScripts, updatedScripts } =
+      await updatePackageJsonScripts(extension)
 
     log('', 'reset')
     log('🎉 Atualização completa!', 'green')
@@ -242,9 +247,11 @@ async function main() {
       log('📦 Scripts do package.json:', 'blue')
       if (addedCount > 0) {
         log(`  ➕ ${addedCount} novos scripts adicionados`, 'green')
+        addedScripts.forEach(s => log(`    - ${s}`, 'green'))
       }
       if (updatedCount > 0) {
         log(`  🔄 ${updatedCount} scripts atualizados`, 'yellow')
+        updatedScripts.forEach(s => log(`    - ${s}`, 'yellow'))
       }
     }
 
