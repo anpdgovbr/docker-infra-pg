@@ -5,40 +5,91 @@ const path = require('path')
 const { execSync: _execSync } = require('child_process')
 const crypto = require('crypto')
 
-// Verificar se port-manager.js existe e baixar se necessário
+// Arquivo escolhido para port-manager após download (ex: 'port-manager.cjs' ou 'port-manager.mjs')
+let portManagerFilename = null
+
+// Baixa a variante adequada de port-manager: prefere .cjs quando possível, usa .mjs via import se o runtime for ESM
 async function ensurePortManager() {
-  const portManagerPath = path.join(__dirname, 'port-manager.js')
+  // Detecta se estamos em um runtime CommonJS (require existe)
+  const preferCjs = typeof require === 'function'
+  const preferExt = preferCjs ? 'cjs' : 'mjs'
+  const fallbackExt = 'cjs'
 
-  if (!fs.existsSync(portManagerPath)) {
-    console.log('🔄 Baixando port-manager.js...')
-    try {
-      const https = require('https')
-      const url = 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/port-manager.js'
+  const targetFile = `port-manager.${preferExt}`
+  const targetPath = path.join(__dirname, targetFile)
+  const repoUrl = `https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/${targetFile}`
 
-      await new Promise((resolve, reject) => {
-        https
-          .get(url, res => {
-            let data = ''
-            res.on('data', chunk => (data += chunk))
-            res.on('end', () => {
-              fs.writeFileSync(portManagerPath, data)
-              console.log('✅ port-manager.js baixado com sucesso!')
-              resolve()
-            })
-            res.on('error', reject)
-          })
-          .on('error', reject)
-      })
-    } catch (error) {
-      console.warn('⚠️  Não foi possível baixar port-manager.js, usando detecção básica de porta')
-      if (error?.message) {
-        console.warn('Detalhes do erro:', error.message)
-      }
-      return false
-    }
+  // Se já existe, apenas marcar e retornar
+  if (fs.existsSync(targetPath)) {
+    portManagerFilename = targetFile
+    return true
   }
 
-  return true
+  console.log(`🔄 Baixando ${targetFile}...`)
+
+  const https = require('https')
+
+  // tenta baixar a variante preferida; se não encontrar (404), tenta fallback (.cjs)
+  try {
+    const data = await new Promise((resolve, reject) => {
+      https
+        .get(repoUrl, res => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`HTTP ${res.statusCode}`))
+            return
+          }
+          let body = ''
+          res.on('data', chunk => (body += chunk))
+          res.on('end', () => resolve(body))
+          res.on('error', reject)
+        })
+        .on('error', reject)
+    })
+
+    fs.writeFileSync(targetPath, data)
+    console.log(`✅ ${targetFile} baixado com sucesso!`)
+    portManagerFilename = targetFile
+    return true
+  } catch (err) {
+    // se a preferência falhou, tentar baixar a variante .cjs como fallback
+    if (preferExt !== fallbackExt) {
+      const fallbackFile = `port-manager.${fallbackExt}`
+      const fallbackPath = path.join(__dirname, fallbackFile)
+      const fallbackUrl = `https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/${fallbackFile}`
+      try {
+        console.log(`ℹ️  Não foi possível baixar ${targetFile} (tentando ${fallbackFile})`)
+        const data2 = await new Promise((resolve, reject) => {
+          https
+            .get(fallbackUrl, res => {
+              if (res.statusCode !== 200) {
+                reject(new Error(`HTTP ${res.statusCode}`))
+                return
+              }
+              let body = ''
+              res.on('data', chunk => (body += chunk))
+              res.on('end', () => resolve(body))
+              res.on('error', reject)
+            })
+            .on('error', reject)
+        })
+
+        fs.writeFileSync(fallbackPath, data2)
+        console.log(`✅ ${fallbackFile} baixado com sucesso! (fallback)`)
+        portManagerFilename = fallbackFile
+        return true
+      } catch (err2) {
+        console.warn(
+          '⚠️  Não foi possível baixar port-manager (nem variante preferida nem fallback), usando detecção básica de porta'
+        )
+        if (err2?.message) console.warn('Detalhes do erro:', err2.message)
+        return false
+      }
+    }
+
+    console.warn('⚠️  Não foi possível baixar port-manager, usando detecção básica de porta')
+    if (err?.message) console.warn('Detalhes do erro:', err.message)
+    return false
+  }
 }
 
 // Função para detectar porta inteligente (fallback local se port-manager não estiver disponível)
@@ -47,10 +98,49 @@ async function getSmartPort() {
 
   if (hasPortManager) {
     try {
-      const portManager = require('./port-manager.js')
-      return await portManager.getSmartPort()
+      // carrega dinamicamente a variante baixada
+      if (
+        portManagerFilename &&
+        portManagerFilename.endsWith('.cjs') &&
+        typeof require === 'function'
+      ) {
+        const portManager = require(`./${portManagerFilename}`)
+        return await portManager.getSmartPort()
+      }
+
+      if (portManagerFilename && portManagerFilename.endsWith('.mjs')) {
+        // em runtime ESM: importar dinamicamente; se o módulo for CommonJS fallback, usamos createRequire
+        try {
+          const portManager = await import(`./${portManagerFilename}`)
+          // suportar export padrão ou named
+          const pm = portManager.default || portManager
+          return await pm.getSmartPort()
+        } catch (importErr) {
+          // tentar fallback para require via createRequire (compatível com CommonJS)
+          try {
+            const { createRequire } = require('module')
+            const requireFn = createRequire(__filename)
+            const portManager = requireFn(`./port-manager.cjs`)
+            return await portManager.getSmartPort()
+          } catch (creqErr) {
+            console.warn(
+              '⚠️  Erro ao importar port-manager.mjs; usando detecção básica:',
+              importErr.message
+            )
+          }
+        }
+      }
+
+      // fallback geral: tentar carregar .cjs com require se estiver disponível
+      if (
+        typeof require === 'function' &&
+        fs.existsSync(path.join(__dirname, 'port-manager.cjs'))
+      ) {
+        const portManager = require('./port-manager.cjs')
+        return await portManager.getSmartPort()
+      }
     } catch (error) {
-      console.warn('⚠️  Erro ao usar port-manager.js, usando detecção básica:', error.message)
+      console.warn('⚠️  Erro ao usar port-manager, usando detecção básica:', error.message)
     }
   }
 
