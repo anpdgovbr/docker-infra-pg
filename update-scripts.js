@@ -53,9 +53,23 @@ function downloadScript(scriptName, targetPath) {
         response.on('data', chunk => (data += chunk))
         response.on('end', () => {
           try {
-            fs.writeFileSync(targetPath, data)
-            log(`✅ Atualizado: ${path.basename(targetPath)}`, 'green')
-            resolve()
+            const exists = fs.existsSync(targetPath)
+            const previous = exists ? fs.readFileSync(targetPath, 'utf8') : null
+
+            if (previous === data) {
+              // Sem alteração
+              log(`ℹ️  Sem alterações: ${path.basename(targetPath)}`, 'blue')
+              resolve({ name: path.basename(targetPath), status: 'unchanged' })
+            } else {
+              fs.writeFileSync(targetPath, data)
+              if (exists) {
+                log(`✅ Atualizado: ${path.basename(targetPath)}`, 'green')
+                resolve({ name: path.basename(targetPath), status: 'updated' })
+              } else {
+                log(`✅ Criado: ${path.basename(targetPath)}`, 'green')
+                resolve({ name: path.basename(targetPath), status: 'created' })
+              }
+            }
           } catch (error) {
             reject(error)
           }
@@ -144,38 +158,53 @@ async function updatePackageJsonScripts(extension) {
   }
 }
 
+// Função auxiliar para garantir a existência da pasta .infra
+function ensureInfraDir(infraDir, infraDbDir) {
+  if (!fs.existsSync(infraDir)) {
+    if (fs.existsSync(infraDbDir)) {
+      log('🔄 Infraestrutura antiga detectada (pasta infra-db/ existe)', 'yellow')
+      log('📦 Criando pasta .infra/ e baixando scripts...', 'blue')
+      fs.mkdirSync(infraDir, { recursive: true })
+      log('✅ Pasta .infra/ criada', 'green')
+    } else {
+      log('❌ Pasta .infra não encontrada!', 'red')
+      log('💡 Execute primeiro: npm run infra:setup', 'yellow')
+      process.exit(1)
+    }
+  }
+}
+
+// Função auxiliar para baixar todos os scripts
+async function downloadAllScripts(scripts, infraDir, extension) {
+  const results = []
+  for (const script of scripts) {
+    const targetPath = path.join(infraDir, script.replace('.js', `.${extension}`))
+    try {
+      const res = await downloadScript(script, targetPath)
+      results.push(res)
+    } catch (error) {
+      log(`❌ Erro ao baixar ${script}: ${error.message}`, 'red')
+      process.exit(1)
+    }
+  }
+  return results
+}
+
 // Função principal
 async function main() {
   try {
     log('🔄 Atualizando scripts da infraestrutura...', 'blue')
 
-    // Verifica se é projeto Node.js
     if (!fs.existsSync('package.json')) {
       log('❌ Este não é um projeto Node.js (package.json não encontrado)', 'red')
       process.exit(1)
     }
 
-    // Verifica se pasta .infra existe
     const infraDir = path.join(process.cwd(), '.infra')
     const infraDbDir = path.join(process.cwd(), 'infra-db')
 
-    if (!fs.existsSync(infraDir)) {
-      // Verifica se tem pasta infra-db (infraestrutura antiga)
-      if (fs.existsSync(infraDbDir)) {
-        log('🔄 Infraestrutura antiga detectada (pasta infra-db/ existe)', 'yellow')
-        log('📦 Criando pasta .infra/ e baixando scripts...', 'blue')
+    ensureInfraDir(infraDir, infraDbDir)
 
-        // Cria pasta .infra
-        fs.mkdirSync(infraDir, { recursive: true })
-        log('✅ Pasta .infra/ criada', 'green')
-      } else {
-        log('❌ Pasta .infra não encontrada!', 'red')
-        log('💡 Execute primeiro: npm run infra:setup', 'yellow')
-        process.exit(1)
-      }
-    }
-
-    // Detecta extensão correta
     const isESModule = isESModuleProject()
     const extension = isESModule ? 'cjs' : 'js'
 
@@ -184,29 +213,29 @@ async function main() {
       'blue'
     )
 
-    // Baixa cada script
-    for (const script of SCRIPTS) {
-      const targetPath = path.join(infraDir, script.replace('.js', `.${extension}`))
+    const downloadResults = await downloadAllScripts(SCRIPTS, infraDir, extension)
 
-      try {
-        await downloadScript(script, targetPath)
-      } catch (error) {
-        log(`❌ Erro ao baixar ${script}: ${error.message}`, 'red')
-        process.exit(1)
-      }
-    }
-
-    // Verifica se precisa atualizar package.json com novos scripts
     const { addedCount, updatedCount } = await updatePackageJsonScripts(extension)
 
     log('', 'reset')
     log('🎉 Atualização completa!', 'green')
     log('', 'reset')
     log('📋 Resumo da atualização:', 'blue')
-    SCRIPTS.forEach(script => {
-      const fileName = script.replace('.js', `.${extension}`)
-      log(`  ✅ Script: .infra/${fileName}`, 'green')
-    })
+
+    // Mostrar apenas scripts que foram criados ou atualizados
+    const changed = (downloadResults || []).filter(
+      r => r && (r.status === 'created' || r.status === 'updated')
+    )
+    const unchanged = (downloadResults || []).filter(r => r && r.status === 'unchanged')
+
+    if (changed.length > 0) {
+      changed.forEach(r =>
+        log(`  ✅ ${r.status === 'created' ? 'Criado' : 'Atualizado'}: .infra/${r.name}`, 'green')
+      )
+    }
+    if (unchanged.length > 0) {
+      unchanged.forEach(r => log(`  ℹ️  Sem alterações: .infra/${r.name}`, 'blue'))
+    }
 
     if (addedCount > 0 || updatedCount > 0) {
       log('', 'reset')
