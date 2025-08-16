@@ -47,10 +47,8 @@ function detectStackConflicts() {
       }
     )
 
-    const lines = result
-      .split('\n')
-      .filter((line) => line.trim() && !line.startsWith('NAMES'))
-    const postgresContainers = lines.map((line) => {
+    const lines = result.split('\n').filter(line => line.trim() && !line.startsWith('NAMES'))
+    const postgresContainers = lines.map(line => {
       const [name, image, ports] = line.split('\t')
       const port = ports ? ports.match(/:(\d+)->/)?.[1] || 'N/A' : 'N/A'
       return { name: name.trim(), image: image.trim(), port }
@@ -62,24 +60,18 @@ function detectStackConflicts() {
     }
 
     log(`📊 Containers PostgreSQL ativos: ${postgresContainers.length}`, 'cyan')
-    postgresContainers.forEach((container) => {
+    postgresContainers.forEach(container => {
       log(`   📦 ${container.name} (porta: ${container.port})`, 'reset')
     })
 
     // Verificar se há containers com nomes genéricos (indicando conflito de stack)
     const genericNames = postgresContainers.filter(
-      (c) =>
-        c.name.includes('infra-db') ||
-        c.name === 'postgres' ||
-        c.name.startsWith('infra_')
+      c => c.name.includes('infra-db') || c.name === 'postgres' || c.name.startsWith('infra_')
     )
 
     if (genericNames.length > 0) {
-      log(
-        '🚨 Detectados containers com nomes genéricos (possível conflito):',
-        'yellow'
-      )
-      genericNames.forEach((container) => {
+      log('🚨 Detectados containers com nomes genéricos (possível conflito):', 'yellow')
+      genericNames.forEach(container => {
         log(`   ⚠️  ${container.name} (porta: ${container.port})`, 'yellow')
       })
       return true
@@ -155,7 +147,7 @@ async function recreateInfrastructure() {
 
     // Aguardar um pouco
     log('⏳ Aguardando limpeza...', 'blue')
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
     // Subir com novo nome
     log('🚀 Subindo infraestrutura com nome único...', 'green')
@@ -186,10 +178,7 @@ async function main() {
   try {
     // Verificar se estamos na raiz do projeto
     if (!fs.existsSync('package.json')) {
-      log(
-        '❌ Execute este script na raiz do projeto (onde está o package.json)',
-        'red'
-      )
+      log('❌ Execute este script na raiz do projeto (onde está o package.json)', 'red')
       process.exit(1)
     }
 
@@ -211,10 +200,7 @@ async function main() {
         process.exit(1)
       }
     } else {
-      log(
-        '\n🎯 Nenhum conflito detectado, mas docker-compose.yml foi atualizado',
-        'green'
-      )
+      log('\n🎯 Nenhum conflito detectado, mas docker-compose.yml foi atualizado', 'green')
       log('💡 Reinicie a infraestrutura para aplicar as mudanças:', 'blue')
       log('   npm run infra:down && npm run infra:up', 'reset')
     }
@@ -222,18 +208,14 @@ async function main() {
     log('\n🎉 Correção de conflitos concluída!', 'green')
     log('\n📋 Verificação final:', 'blue')
     log('   1. npm run infra:status - Ver se está rodando', 'reset')
-    log(
-      '   2. docker ps --filter "name=postgres" - Ver containers únicos',
-      'reset'
-    )
+    log('   2. docker ps --filter "name=postgres" - Ver containers únicos', 'reset')
     log('   3. npm run infra:logs - Ver logs se houver problemas', 'reset')
 
     // Mostrar resumo da configuração
     log('\n📊 Configuração atual:', 'cyan')
     try {
       const envContent = fs.readFileSync('.env', 'utf8')
-      const port =
-        envContent.match(/DATABASE_URL.*localhost:(\d+)/)?.[1] || '5432'
+      const port = envContent.match(/DATABASE_URL.*localhost:(\d+)/)?.[1] || '5432'
       log(`   🎯 Porta: ${port}`, 'reset')
       log(`   🏷️  Stack: ${projectName}-stack`, 'reset')
       log(`   📦 Container: ${projectName}_postgres`, 'reset')

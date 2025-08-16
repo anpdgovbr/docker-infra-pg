@@ -7,7 +7,7 @@
 
 const fs = require('fs')
 const https = require('https')
-const path = require('path')
+const _path = require('path')
 
 // Cores para output
 const colors = {
@@ -46,18 +46,17 @@ async function downloadAndRunUpdate() {
       fs.mkdirSync('.infra', { recursive: true })
     }
 
-    const url =
-      'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js'
+    const url = 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js'
 
     https
-      .get(url, (response) => {
+      .get(url, response => {
         if (response.statusCode !== 200) {
           reject(new Error(`HTTP ${response.statusCode}: ${url}`))
           return
         }
 
         let data = ''
-        response.on('data', (chunk) => (data += chunk))
+        response.on('data', chunk => (data += chunk))
         response.on('end', () => {
           try {
             fs.writeFileSync(tempFile, data)
@@ -72,7 +71,7 @@ async function downloadAndRunUpdate() {
               cwd: process.cwd()
             })
 
-            child.on('close', (code) => {
+            child.on('close', code => {
               // Remove arquivo temporário
               try {
                 fs.unlinkSync(tempFile)
@@ -104,10 +103,7 @@ async function main() {
 
     // Verifica se é projeto Node.js
     if (!fs.existsSync('package.json')) {
-      log(
-        '❌ Este não é um projeto Node.js (package.json não encontrado)',
-        'red'
-      )
+      log('❌ Este não é um projeto Node.js (package.json não encontrado)', 'red')
       process.exit(1)
     }
 

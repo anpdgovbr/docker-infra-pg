@@ -27,7 +27,7 @@ function log(message, color = 'reset') {
 
 // Sleep cross-platform
 function sleep(seconds) {
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
+  return new Promise(resolve => setTimeout(resolve, seconds * 1000))
 }
 
 // Executa comando com tratamento de erro
@@ -128,10 +128,9 @@ const commands = {
     const backupFile = `backup-${timestamp}.sql`
 
     log(`💾 Criando backup: ${backupFile}`, 'blue')
-    runCommand(
-      `docker-compose exec -T postgres pg_dump -U admin postgres > ${backupFile}`,
-      { cwd: infraDir }
-    )
+    runCommand(`docker-compose exec -T postgres pg_dump -U admin postgres > ${backupFile}`, {
+      cwd: infraDir
+    })
     log(`✅ Backup criado: ${path.join(infraDir, backupFile)}`, 'green')
   },
 
@@ -151,10 +150,9 @@ const commands = {
     }
 
     log(`📥 Restaurando backup: ${backupFile}`, 'blue')
-    runCommand(
-      `docker-compose exec -T postgres psql -U admin postgres < ${backupFile}`,
-      { cwd: infraDir }
-    )
+    runCommand(`docker-compose exec -T postgres psql -U admin postgres < ${backupFile}`, {
+      cwd: infraDir
+    })
     log('✅ Backup restaurado!', 'green')
   }
 }

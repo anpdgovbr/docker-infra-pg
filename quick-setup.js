@@ -19,17 +19,14 @@ console.log(`📊 SO detectado: ${os.platform()} ${os.arch()}`)
 // Verifica se há package.json no diretório atual
 if (!fs.existsSync('package.json')) {
   console.log(`⚠️  Nenhum package.json encontrado no diretório atual`)
-  console.log(
-    `💡 Este comando deve ser executado na raiz de um projeto Node.js`
-  )
+  console.log(`💡 Este comando deve ser executado na raiz de um projeto Node.js`)
   console.log(`📂 Diretório atual: ${process.cwd()}`)
   process.exit(1)
 }
 
 try {
   // URL do script
-  const scriptUrl =
-    'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js'
+  const scriptUrl = 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js'
 
   // Comando cross-platform
   const command = `curl -sSL ${scriptUrl} -o temp-setup.cjs && node temp-setup.cjs && ${deleteCommand} temp-setup.cjs`

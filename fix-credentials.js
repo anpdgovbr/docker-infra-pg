@@ -28,7 +28,7 @@ function readEnvFile(filePath) {
     const content = fs.readFileSync(filePath, 'utf8')
     const vars = {}
 
-    content.split('\n').forEach((line) => {
+    content.split('\n').forEach(line => {
       const [key, ...valueParts] = line.split('=')
       if (key && valueParts.length > 0) {
         const value = valueParts.join('=').replace(/"/g, '').trim()
@@ -45,7 +45,7 @@ function readEnvFile(filePath) {
 // Gera docker-compose.yml com credenciais corretas e porta inteligente
 function generateDockerCompose(dbName, dbUser, dbPassword, dbPort = 5432) {
   // Função para sanitizar nomes Docker (não pode começar com underscore, hífen ou ponto)
-  const sanitizeName = (name) => {
+  const sanitizeName = name => {
     return name
       .replace(/[^a-zA-Z0-9]/g, '_') // Substituir caracteres especiais por underscore
       .replace(/^[^a-zA-Z0-9]+/, '') // Remover underscores, hífens do início
@@ -106,10 +106,7 @@ async function getSmartPort() {
     // Usa porta padrão
     return 5432
   } catch (error) {
-    log(
-      `⚠️  Usando porta padrão 5432 (erro na detecção: ${error.message})`,
-      'yellow'
-    )
+    log(`⚠️  Usando porta padrão 5432 (erro na detecção: ${error.message})`, 'yellow')
     return 5432
   }
 }
@@ -120,10 +117,7 @@ async function main() {
 
     // Verifica se é projeto Node.js
     if (!fs.existsSync('package.json')) {
-      log(
-        '❌ Este não é um projeto Node.js (package.json não encontrado)',
-        'red'
-      )
+      log('❌ Este não é um projeto Node.js (package.json não encontrado)', 'red')
       process.exit(1)
     }
 
@@ -155,7 +149,7 @@ async function main() {
 
     if (projectEnv.DATABASE_URL) {
       const dbUrlMatch = projectEnv.DATABASE_URL.match(
-        /postgresql:\/\/([^:]+):([^@]+)@[^\/]+\/([^?]+)/
+        /postgresql:\/\/([^:]+):([^@]+)@[^/]+\/([^?]+)/
       )
       if (dbUrlMatch) {
         dbUser = dbUrlMatch[1]
@@ -171,7 +165,7 @@ async function main() {
         projectEnv.POSTGRES_DB ||
         `${path
           .basename(process.cwd())
-          .replace(/[@\/]/g, '')
+          .replace(new RegExp('[@/]', 'g'), '')
           .replace(/-/g, '_')}_dev`
       dbUser = projectEnv.POSTGRES_USER || 'dev_user'
       dbPassword = projectEnv.POSTGRES_PASSWORD || 'dev_password'
@@ -180,10 +174,7 @@ async function main() {
 
     log(`  DB: ${dbName}`, 'reset')
     log(`  User: ${dbUser}`, 'reset')
-    log(
-      `  Password: ${dbPassword.replace(/(.{2}).+(.{2})/, '$1***$2')}`,
-      'reset'
-    )
+    log(`  Password: ${dbPassword.replace(/(.{2}).+(.{2})/, '$1***$2')}`, 'reset')
 
     // Detecta porta inteligente
     log('🔍 Detectando porta...', 'blue')
@@ -199,16 +190,8 @@ async function main() {
     }
 
     // Gera novo docker-compose.yml com porta inteligente
-    log(
-      '📝 Gerando docker-compose.yml com credenciais e porta corretas...',
-      'blue'
-    )
-    const dockerComposeContent = generateDockerCompose(
-      dbName,
-      dbUser,
-      dbPassword,
-      dbPort
-    )
+    log('📝 Gerando docker-compose.yml com credenciais e porta corretas...', 'blue')
+    const dockerComposeContent = generateDockerCompose(dbName, dbUser, dbPassword, dbPort)
     fs.writeFileSync(dockerComposePath, dockerComposeContent)
 
     // Atualiza .env da infraestrutura

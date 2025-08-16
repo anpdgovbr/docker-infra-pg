@@ -25,7 +25,7 @@ function log(message, color = 'reset') {
 
 // Testa se uma porta está disponível
 function isPortAvailable(port) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const server = net.createServer()
 
     server.listen(port, () => {
@@ -78,17 +78,13 @@ function findUsedPostgresPorts() {
       if (fs.existsSync(basePath)) {
         const projects = fs
           .readdirSync(basePath, { withFileTypes: true })
-          .filter((dirent) => dirent.isDirectory())
-          .map((dirent) => dirent.name)
+          .filter(dirent => dirent.isDirectory())
+          .map(dirent => dirent.name)
 
         for (const project of projects) {
           const projectPath = path.join(basePath, project)
           const envPath = path.join(projectPath, '.env')
-          const dockerComposePath = path.join(
-            projectPath,
-            'infra-db',
-            'docker-compose.yml'
-          )
+          const dockerComposePath = path.join(projectPath, 'infra-db', 'docker-compose.yml')
 
           // Verifica .env
           if (fs.existsSync(envPath)) {
@@ -129,9 +125,7 @@ function findUsedPostgresPorts() {
 async function findAvailablePort(startPort = 5432) {
   const usedPorts = findUsedPostgresPorts()
   log(
-    `🔍 Portas PostgreSQL já em uso: ${
-      usedPorts.length > 0 ? usedPorts.join(', ') : 'nenhuma'
-    }`,
+    `🔍 Portas PostgreSQL já em uso: ${usedPorts.length > 0 ? usedPorts.join(', ') : 'nenhuma'}`,
     'blue'
   )
 
@@ -148,13 +142,11 @@ async function findAvailablePort(startPort = 5432) {
     testPort++
   }
 
-  throw new Error(
-    `Não foi possível encontrar uma porta disponível após ${maxAttempts} tentativas`
-  )
+  throw new Error(`Não foi possível encontrar uma porta disponível após ${maxAttempts} tentativas`)
 }
 
 // Lê configuração de porta salva
-function getSavedPort(projectName) {
+function getSavedPort(_projectName) {
   try {
     const configPath = path.join(process.cwd(), '.infra', 'port-config.json')
     if (fs.existsSync(configPath)) {
@@ -168,7 +160,7 @@ function getSavedPort(projectName) {
 }
 
 // Salva configuração de porta
-function savePortConfig(port, projectName) {
+function savePortConfig(port, _projectName) {
   try {
     const infraDir = path.join(process.cwd(), '.infra')
     if (!fs.existsSync(infraDir)) {
@@ -178,7 +170,7 @@ function savePortConfig(port, projectName) {
     const configPath = path.join(infraDir, 'port-config.json')
     const config = {
       port: port,
-      project: projectName,
+      project: _projectName || getProjectName(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
@@ -219,10 +211,7 @@ async function getSmartPort(forceNew = false) {
         log(`✅ Usando porta salva: ${savedPort}`, 'green')
         return savedPort
       } else {
-        log(
-          `⚠️  Porta salva ${savedPort} não está mais disponível, buscando nova...`,
-          'yellow'
-        )
+        log(`⚠️  Porta salva ${savedPort} não está mais disponível, buscando nova...`, 'yellow')
       }
     }
   }

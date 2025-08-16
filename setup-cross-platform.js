@@ -2,7 +2,7 @@
 
 const fs = require('fs')
 const path = require('path')
-const { execSync } = require('child_process')
+const { execSync: _execSync } = require('child_process')
 const crypto = require('crypto')
 
 // Verificar se port-manager.js existe e baixar se necessário
@@ -13,14 +13,13 @@ async function ensurePortManager() {
     console.log('🔄 Baixando port-manager.js...')
     try {
       const https = require('https')
-      const url =
-        'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/port-manager.js'
+      const url = 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/port-manager.js'
 
       await new Promise((resolve, reject) => {
         https
-          .get(url, (res) => {
+          .get(url, res => {
             let data = ''
-            res.on('data', (chunk) => (data += chunk))
+            res.on('data', chunk => (data += chunk))
             res.on('end', () => {
               fs.writeFileSync(portManagerPath, data)
               console.log('✅ port-manager.js baixado com sucesso!')
@@ -31,9 +30,7 @@ async function ensurePortManager() {
           .on('error', reject)
       })
     } catch (error) {
-      console.warn(
-        '⚠️  Não foi possível baixar port-manager.js, usando detecção básica de porta'
-      )
+      console.warn('⚠️  Não foi possível baixar port-manager.js, usando detecção básica de porta')
       return false
     }
   }
@@ -50,18 +47,15 @@ async function getSmartPort() {
       const portManager = require('./port-manager.js')
       return await portManager.getSmartPort()
     } catch (error) {
-      console.warn(
-        '⚠️  Erro ao usar port-manager.js, usando detecção básica:',
-        error.message
-      )
+      console.warn('⚠️  Erro ao usar port-manager.js, usando detecção básica:', error.message)
     }
   }
 
   // Fallback: detecção básica de porta
   const net = require('net')
 
-  const isPortAvailable = (port) => {
-    return new Promise((resolve) => {
+  const isPortAvailable = port => {
+    return new Promise(resolve => {
       const server = net.createServer()
       server.listen(port, () => {
         server.once('close', () => resolve(true))
@@ -105,7 +99,7 @@ function detectProjectConfig() {
 
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, 'utf8')
-    envContent.split('\n').forEach((line) => {
+    envContent.split('\n').forEach(line => {
       const [key, ...valueParts] = line.split('=')
       if (key && valueParts.length > 0) {
         envConfig[key.trim()] = valueParts
@@ -147,7 +141,7 @@ function createDockerCompose(config) {
   const { projectName, port, dbName, username, password } = config
 
   // Função para sanitizar nomes Docker (não pode começar com underscore, hífen ou ponto)
-  const sanitizeName = (name) => {
+  const sanitizeName = name => {
     return name
       .replace(/[^a-zA-Z0-9]/g, '_') // Substituir caracteres especiais por underscore
       .replace(/^[^a-zA-Z0-9]+/, '') // Remover underscores, hífens do início
@@ -237,7 +231,7 @@ echo "✅ Banco de dados ${dbName} configurado com sucesso!"
 
 // Função para atualizar .env
 function updateEnvFile(config) {
-  const { projectName, port, dbName, username, password } = config
+  const { projectName: _projectName, port, dbName, username, password } = config
   const projectRoot = process.cwd()
   const envPath = path.join(projectRoot, '.env')
 
@@ -252,7 +246,7 @@ function updateEnvFile(config) {
     envContent = currentContent
 
     // Parse existing env
-    currentContent.split('\n').forEach((line) => {
+    currentContent.split('\n').forEach(line => {
       const [key, ...valueParts] = line.split('=')
       if (key && valueParts.length > 0) {
         existingEnv[key.trim()] = valueParts.join('=').trim()
@@ -273,9 +267,7 @@ function updateEnvFile(config) {
     if (envContent.match(regex)) {
       envContent = envContent.replace(regex, `${key}=${value}`)
     } else {
-      envContent += `${
-        envContent && !envContent.endsWith('\n') ? '\n' : ''
-      }${key}=${value}\n`
+      envContent += `${envContent && !envContent.endsWith('\n') ? '\n' : ''}${key}=${value}\n`
     }
   })
 
@@ -286,13 +278,12 @@ function updateEnvFile(config) {
 
 // Função principal
 async function main() {
-  console.log(
-    '🚀 Configurando infraestrutura PostgreSQL com detecção inteligente de porta...\n'
-  )
+  console.log('🚀 Configurando infraestrutura PostgreSQL com detecção inteligente de porta...\n')
 
   try {
     // Detectar configuração do projeto
-    const { projectName, envConfig } = detectProjectConfig()
+    const { projectName: _projectName, envConfig } = detectProjectConfig()
+    const projectName = _projectName
     console.log(`📦 Projeto detectado: ${projectName}`)
 
     // Detectar porta inteligente
@@ -311,10 +302,7 @@ async function main() {
         envConfig.POSTGRES_DB ||
         `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_dev`,
       username: existingDb.username || envConfig.POSTGRES_USER || 'dev_user',
-      password:
-        existingDb.password ||
-        envConfig.POSTGRES_PASSWORD ||
-        generateSecurePassword()
+      password: existingDb.password || envConfig.POSTGRES_PASSWORD || generateSecurePassword()
     }
 
     console.log('📋 Configuração final:')

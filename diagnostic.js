@@ -27,7 +27,7 @@ function readEnvFile(filePath) {
     const content = fs.readFileSync(filePath, 'utf8')
     const vars = {}
 
-    content.split('\n').forEach((line) => {
+    content.split('\n').forEach(line => {
       const [key, ...valueParts] = line.split('=')
       if (key && valueParts.length > 0) {
         const value = valueParts.join('=').replace(/"/g, '').trim()
@@ -71,13 +71,8 @@ function main() {
 
   if (projectEnv) {
     log('📄 Configuração do projeto (.env):', 'blue')
-    const projectDbVars = [
-      'POSTGRES_DB',
-      'POSTGRES_USER',
-      'POSTGRES_PASSWORD',
-      'DATABASE_URL'
-    ]
-    projectDbVars.forEach((key) => {
+    const projectDbVars = ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'DATABASE_URL']
+    projectDbVars.forEach(key => {
       const value = projectEnv[key]
       if (value) {
         // Oculta senha parcialmente
@@ -95,13 +90,8 @@ function main() {
 
   if (infraEnv) {
     log('🏗️  Configuração da infraestrutura (infra-db/.env):', 'blue')
-    const infraDbVars = [
-      'POSTGRES_DB',
-      'POSTGRES_USER',
-      'POSTGRES_PASSWORD',
-      'DATABASE_URL'
-    ]
-    infraDbVars.forEach((key) => {
+    const infraDbVars = ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'DATABASE_URL']
+    infraDbVars.forEach(key => {
       const value = infraEnv[key]
       if (value) {
         // Oculta senha parcialmente
@@ -124,7 +114,7 @@ function main() {
     const compareVars = ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD']
     let mismatches = 0
 
-    compareVars.forEach((key) => {
+    compareVars.forEach(key => {
       const projectVal = projectEnv[key]
       const infraVal = infraEnv[key]
 
@@ -143,9 +133,7 @@ function main() {
           )
           log(
             `    Infra:   ${
-              key.includes('PASSWORD')
-                ? infraVal.replace(/(.{2}).+(.{2})/, '$1***$2')
-                : infraVal
+              key.includes('PASSWORD') ? infraVal.replace(/(.{2}).+(.{2})/, '$1***$2') : infraVal
             }`,
             'yellow'
           )

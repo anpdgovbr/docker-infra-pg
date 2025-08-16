@@ -53,10 +53,7 @@ function fixDockerCompose() {
     return true
   }
 
-  log(
-    `🚨 Encontrados volumes inválidos: ${invalidVolumes.join(', ')}`,
-    'yellow'
-  )
+  log(`🚨 Encontrados volumes inválidos: ${invalidVolumes.join(', ')}`, 'yellow')
 
   // Gerar nome válido baseado no projeto
   const projectName = sanitizeName(path.basename(process.cwd()))
@@ -69,7 +66,7 @@ function fixDockerCompose() {
   log(`🔧 Novo nome do container: ${validContainerName}`, 'green')
 
   // Substituir nomes inválidos pelos válidos
-  invalidVolumes.forEach((invalidName) => {
+  invalidVolumes.forEach(invalidName => {
     content = content.replace(new RegExp(invalidName, 'g'), validVolumeName)
   })
 
@@ -103,17 +100,15 @@ function cleanupOldResources() {
 
   try {
     // Parar todos os containers PostgreSQL com nomes inválidos
-    const psResult = execSync(
-      'docker ps -a --format "{{.Names}}" --filter "name=postgres"',
-      { encoding: 'utf8', stdio: 'pipe' }
-    )
-    const containers = psResult
-      .split('\n')
-      .filter((name) => name.trim() && name.startsWith('_'))
+    const psResult = execSync('docker ps -a --format "{{.Names}}" --filter "name=postgres"', {
+      encoding: 'utf8',
+      stdio: 'pipe'
+    })
+    const containers = psResult.split('\n').filter(name => name.trim() && name.startsWith('_'))
 
     if (containers.length > 0) {
       log(`🛑 Parando containers inválidos: ${containers.join(', ')}`, 'yellow')
-      containers.forEach((container) => {
+      containers.forEach(container => {
         try {
           execSync(`docker stop ${container}`, { stdio: 'pipe' })
           execSync(`docker rm ${container}`, { stdio: 'pipe' })
@@ -131,14 +126,11 @@ function cleanupOldResources() {
     })
     const volumes = volumesResult
       .split('\n')
-      .filter(
-        (name) =>
-          name.trim() && name.startsWith('_') && name.includes('postgres')
-      )
+      .filter(name => name.trim() && name.startsWith('_') && name.includes('postgres'))
 
     if (volumes.length > 0) {
       log(`🗂️ Removendo volumes inválidos: ${volumes.join(', ')}`, 'yellow')
-      volumes.forEach((volume) => {
+      volumes.forEach(volume => {
         try {
           execSync(`docker volume rm ${volume}`, { stdio: 'pipe' })
           log(`  ✅ ${volume} removido`, 'green')
@@ -155,14 +147,11 @@ function cleanupOldResources() {
     })
     const networks = networksResult
       .split('\n')
-      .filter(
-        (name) =>
-          name.trim() && name.startsWith('_') && name.includes('network')
-      )
+      .filter(name => name.trim() && name.startsWith('_') && name.includes('network'))
 
     if (networks.length > 0) {
       log(`🌐 Removendo networks inválidas: ${networks.join(', ')}`, 'yellow')
-      networks.forEach((network) => {
+      networks.forEach(network => {
         try {
           execSync(`docker network rm ${network}`, { stdio: 'pipe' })
           log(`  ✅ ${network} removida`, 'green')
@@ -183,10 +172,7 @@ function main() {
   try {
     // Verificar se estamos na raiz do projeto
     if (!fs.existsSync('package.json')) {
-      log(
-        '❌ Execute este script na raiz do projeto (onde está o package.json)',
-        'red'
-      )
+      log('❌ Execute este script na raiz do projeto (onde está o package.json)', 'red')
       process.exit(1)
     }
 

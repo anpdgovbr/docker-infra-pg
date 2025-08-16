@@ -4,16 +4,44 @@
 !.env.example
 
 # 🔒 Arquivos SQL gerados automaticamente (com dados sensíveis ou de ambiente)
+# 🔒 Arquivos de ambiente (somente exemplos devem ser versionados)
+.env
+.env.*
+!.env.example
+# Ignore variantes locais de env
+.env.local
+.env.test
+.env.production
+
+# 🔒 Arquivos SQL gerados automaticamente (com dados sensíveis ou de ambiente)
 init/*.sql
 !init/README.md
 config/servers.json
 
-# 📝 Arquivos de troubleshooting podem ser mantidos versionados
-# TROUBLESHOOTING-*.md
+# Node modules / package artifacts
+node_modules/
+npm-debug.log*
+yarn-error.log
+.pnp.*
+
+# Logs
+logs/
+*.log
+
+# Build / coverage outputs
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Caches
+.cache/
+.parcel-cache/
+.turbo/
 
 # ⚙️ Configurações de sistema / IDEs
 .DS_Store
-*.log
 *.swp
 .vscode/
 .idea/
@@ -26,3 +54,11 @@ config/servers.json
 temp-setup.cjs
 temp-setup.js
 *-temp.*
+
+# Docker / compose local overrides
+docker-compose.override.yml
+
+# Ignore infra local database data (se criado como arquivo)
+infra-db/*.local
+
+# End of file

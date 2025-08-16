@@ -33,15 +33,9 @@ function isESModuleProject() {
 }
 
 // URLs dos scripts
-const REPO_BASE =
-  'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main'
+const REPO_BASE = 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main'
 
-const SCRIPTS = [
-  'setup-cross-platform.js',
-  'docker-helper.js',
-  'db-helper.js',
-  'port-manager.js'
-]
+const SCRIPTS = ['setup-cross-platform.js', 'docker-helper.js', 'db-helper.js', 'port-manager.js']
 
 // Download de um script
 function downloadScript(scriptName, targetPath) {
@@ -49,14 +43,14 @@ function downloadScript(scriptName, targetPath) {
     const url = `${REPO_BASE}/${scriptName}`
 
     https
-      .get(url, (response) => {
+      .get(url, response => {
         if (response.statusCode !== 200) {
           reject(new Error(`HTTP ${response.statusCode}: ${url}`))
           return
         }
 
         let data = ''
-        response.on('data', (chunk) => (data += chunk))
+        response.on('data', chunk => (data += chunk))
         response.on('end', () => {
           try {
             fs.writeFileSync(targetPath, data)
@@ -115,9 +109,7 @@ async function updatePackageJsonScripts(extension) {
     log('🔍 Verificando scripts no package.json...', 'blue')
 
     // Adiciona ou atualiza scripts
-    for (const [scriptName, scriptCommand] of Object.entries(
-      currentInfraScripts
-    )) {
+    for (const [scriptName, scriptCommand] of Object.entries(currentInfraScripts)) {
       if (!packageJson.scripts[scriptName]) {
         // Script novo - adiciona
         packageJson.scripts[scriptName] = scriptCommand
@@ -133,16 +125,10 @@ async function updatePackageJsonScripts(extension) {
 
     // Salva package.json se houve mudanças
     if (addedCount > 0 || updatedCount > 0) {
-      fs.writeFileSync(
-        packageJsonPath,
-        JSON.stringify(packageJson, null, 2) + '\n'
-      )
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n')
 
       if (addedCount > 0) {
-        log(
-          `✅ ${addedCount} novos scripts adicionados ao package.json`,
-          'green'
-        )
+        log(`✅ ${addedCount} novos scripts adicionados ao package.json`, 'green')
       }
       if (updatedCount > 0) {
         log(`✅ ${updatedCount} scripts atualizados no package.json`, 'green')
@@ -165,10 +151,7 @@ async function main() {
 
     // Verifica se é projeto Node.js
     if (!fs.existsSync('package.json')) {
-      log(
-        '❌ Este não é um projeto Node.js (package.json não encontrado)',
-        'red'
-      )
+      log('❌ Este não é um projeto Node.js (package.json não encontrado)', 'red')
       process.exit(1)
     }
 
@@ -179,10 +162,7 @@ async function main() {
     if (!fs.existsSync(infraDir)) {
       // Verifica se tem pasta infra-db (infraestrutura antiga)
       if (fs.existsSync(infraDbDir)) {
-        log(
-          '🔄 Infraestrutura antiga detectada (pasta infra-db/ existe)',
-          'yellow'
-        )
+        log('🔄 Infraestrutura antiga detectada (pasta infra-db/ existe)', 'yellow')
         log('📦 Criando pasta .infra/ e baixando scripts...', 'blue')
 
         // Cria pasta .infra
@@ -200,18 +180,13 @@ async function main() {
     const extension = isESModule ? 'cjs' : 'js'
 
     log(
-      `📦 Projeto ${
-        isESModule ? 'ES Module' : 'CommonJS'
-      } detectado - usando .${extension}`,
+      `📦 Projeto ${isESModule ? 'ES Module' : 'CommonJS'} detectado - usando .${extension}`,
       'blue'
     )
 
     // Baixa cada script
     for (const script of SCRIPTS) {
-      const targetPath = path.join(
-        infraDir,
-        script.replace('.js', `.${extension}`)
-      )
+      const targetPath = path.join(infraDir, script.replace('.js', `.${extension}`))
 
       try {
         await downloadScript(script, targetPath)
@@ -222,15 +197,13 @@ async function main() {
     }
 
     // Verifica se precisa atualizar package.json com novos scripts
-    const { addedCount, updatedCount } = await updatePackageJsonScripts(
-      extension
-    )
+    const { addedCount, updatedCount } = await updatePackageJsonScripts(extension)
 
     log('', 'reset')
     log('🎉 Atualização completa!', 'green')
     log('', 'reset')
     log('📋 Resumo da atualização:', 'blue')
-    SCRIPTS.forEach((script) => {
+    SCRIPTS.forEach(script => {
       const fileName = script.replace('.js', `.${extension}`)
       log(`  ✅ Script: .infra/${fileName}`, 'green')
     })
@@ -247,10 +220,7 @@ async function main() {
     }
 
     log('', 'reset')
-    log(
-      '💡 Agora você pode usar todos os comandos com as últimas melhorias!',
-      'yellow'
-    )
+    log('💡 Agora você pode usar todos os comandos com as últimas melhorias!', 'yellow')
   } catch (error) {
     log(`❌ Erro: ${error.message}`, 'red')
     process.exit(1)

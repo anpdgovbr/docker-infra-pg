@@ -1,0 +1,21 @@
+{
+  "name": "@anpdgovbr/docker-infra-pg",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "format": "prettier --write \"**/*.{js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,json,md}\"",
+    "lint": "eslint \"**/*.js\" --ignore-path .eslintignore",
+    "lint:fix": "eslint \"**/*.js\" --fix --ignore-path .eslintignore"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.8",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-prettier": "^4.2.1"
+  }
+}

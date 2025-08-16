@@ -6,8 +6,8 @@
  */
 
 const fs = require('fs')
-const path = require('path')
-const { execSync } = require('child_process')
+const _path = require('path')
+const { execSync: _execSync } = require('child_process')
 
 // Cores para output
 const colors = {
@@ -118,9 +118,7 @@ function generateInfraScripts() {
   const extension = isESModule ? 'cjs' : 'js'
 
   log(
-    `📦 Projeto ${
-      isESModule ? 'ES Module' : 'CommonJS'
-    } detectado - usando .${extension}`,
+    `📦 Projeto ${isESModule ? 'ES Module' : 'CommonJS'} detectado - usando .${extension}`,
     'blue'
   )
 
@@ -173,10 +171,7 @@ function main() {
 
     // Verificações
     if (!isNodeProject()) {
-      log(
-        '❌ Este não parece ser um projeto Node.js (package.json não encontrado)',
-        'red'
-      )
+      log('❌ Este não parece ser um projeto Node.js (package.json não encontrado)', 'red')
       process.exit(1)
     }
 

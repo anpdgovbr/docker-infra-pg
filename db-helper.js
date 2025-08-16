@@ -24,7 +24,7 @@ function log(message, color = 'reset') {
 
 // Sleep cross-platform
 function sleep(seconds) {
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
+  return new Promise(resolve => setTimeout(resolve, seconds * 1000))
 }
 
 // Executa comando com tratamento de erro
