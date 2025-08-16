@@ -31,6 +31,9 @@ async function ensurePortManager() {
       })
     } catch (error) {
       console.warn('⚠️  Não foi possível baixar port-manager.js, usando detecção básica de porta')
+      if (error?.message) {
+        console.warn('Detalhes do erro:', error.message)
+      }
       return false
     }
   }
@@ -57,11 +60,22 @@ async function getSmartPort() {
   const isPortAvailable = port => {
     return new Promise(resolve => {
       const server = net.createServer()
-      server.listen(port, () => {
-        server.once('close', () => resolve(true))
+
+      function onListen() {
+        server.once('close', onClose)
         server.close()
-      })
-      server.on('error', () => resolve(false))
+      }
+
+      function onClose() {
+        resolve(true)
+      }
+
+      function onError() {
+        resolve(false)
+      }
+
+      server.listen(port, onListen)
+      server.on('error', onError)
     })
   }
 
@@ -105,7 +119,7 @@ function detectProjectConfig() {
         envConfig[key.trim()] = valueParts
           .join('=')
           .trim()
-          .replace(/^["']|["']$/g, '')
+          .replace(/^((["'])|(["'])$)/g, '')
       }
     })
   }
@@ -231,7 +245,7 @@ echo "✅ Banco de dados ${dbName} configurado com sucesso!"
 
 // Função para atualizar .env
 function updateEnvFile(config) {
-  const { projectName: _projectName, port, dbName, username, password } = config
+  const { port, dbName, username, password } = config
   const projectRoot = process.cwd()
   const envPath = path.join(projectRoot, '.env')
 
@@ -264,7 +278,7 @@ function updateEnvFile(config) {
 
   Object.entries(envVars).forEach(([key, value]) => {
     const regex = new RegExp(`^${key}=.*$`, 'm')
-    if (envContent.match(regex)) {
+    if (regex.exec(envContent)) {
       envContent = envContent.replace(regex, `${key}=${value}`)
     } else {
       envContent += `${envContent && !envContent.endsWith('\n') ? '\n' : ''}${key}=${value}\n`
@@ -341,7 +355,14 @@ async function main() {
     console.log('✅ .env atualizado')
 
     console.log('\n🎉 Infraestrutura configurada com sucesso!')
-    console.log('\n📋 Próximos passos:')
+
+    // Opção recomendada para a maioria dos usuários (usa os scripts do package.json)
+    console.log('\n� Recomendado (mais simples):')
+    console.log('   1. npm run infra:up')
+    console.log('   2. Aguarde ~30s para inicialização completa')
+
+    // Alternativa manual para usuários avançados
+    console.log('\n📋 Alternativa manual:')
     console.log('   1. cd infra-db')
     console.log('   2. docker-compose up -d')
     console.log('   3. Aguarde ~30s para inicialização completa')
