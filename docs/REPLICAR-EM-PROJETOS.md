@@ -335,3 +335,7 @@ npm run infra:setup
 ---
 
 **Uma infraestrutura. Todos os projetos ANPD. Zero configuração manual.** 🎉
+
+## 🔐 Nota sobre Segredos
+
+Ao executar comandos que exibem URLs, as senhas são mascaradas por padrão. Para exibir temporariamente use `--show-secrets` ou defina `SHOW_SECRETS=1`. Para ver pilhas completas nos erros use `--verbose` ou `VERBOSE=1`.

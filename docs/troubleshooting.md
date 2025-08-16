@@ -352,3 +352,7 @@ npm run infra:db:init                   # Reconfigurar
 ---
 
 **Integração 100% compatível com projetos ANPD existentes! 🎉**
+
+## 🔐 Nota sobre Logs e Segredos
+
+Em operações de debug, as senhas em URLs são mascaradas por padrão. Para revelar temporariamente use `--show-secrets` ou defina `SHOW_SECRETS=1`. Para pilhas/erros completos use `--verbose` ou `VERBOSE=1`.

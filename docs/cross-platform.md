@@ -246,6 +246,12 @@ chmod +x docker-helper.js
 chmod +x db-helper.js
 ```
 
+## 🧭 Notas Rápidas
+
+- Se seu projeto usa ES Modules (`"type": "module"`), os helpers baixados tentam carregar versões compatíveis; quando necessário a recomendação é usar um arquivo temporário `.cjs` (ex.: `temp-setup.cjs`) e executar com `node temp-setup.cjs`.
+
+- Logs: por padrão senhas são mascaradas; use `--show-secrets` ou `SHOW_SECRETS=1` para revelar durante diagnóstico. Use `--verbose` ou `VERBOSE=1` para ver pilhas completas.
+
 ---
 
 **Agora você tem infraestrutura PostgreSQL que funciona em QUALQUER plataforma! 🎉**

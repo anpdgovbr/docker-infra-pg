@@ -1,89 +1,38 @@
-# 📚 Documentação Completa - Docker PostgreSQL Infrastructure
+# 📚 Índice de documentação — docker-infra-pg
 
-## 🚀 Início Rápido
+Este índice lista os guias e referências disponíveis no diretório `docs/`.
 
-- **[README Principal](../README.md)** - Configuração rápida e visão geral
-- **[Setup em 1 Comando](../README.md#-setup-rápido-universal)** - Configuração automática
-- **[Múltiplos Projetos](#-múltiplos-projetos-na-mesma-vm)** - Gerenciamento de portas inteligente
+Guia principal
 
-## 📖 Guias de Uso
+- `guia-completo.md` — Guia passo a passo com exemplos de uso e fluxos (setup, deploy local, múltiplos projetos).
 
-- **[Como Usar](./guia-completo.md)** - Tutorial completo passo a passo
-- **[Comandos Disponíveis](./comandos.md)** - Referência de todos os scripts NPM
-- **[Solução de Problemas](./troubleshooting.md)** - Problemas comuns e soluções
+Comandos e templates
 
-## 🔧 Recursos Avançados
+- `comandos.md` — Templates de scripts `package.json` por cenário (dev, CI, Next.js, Prisma).
 
-- **[Detecção Inteligente de Porta](./port-management.md)** - Sistema de portas automático
-- **[Cross-Platform](./cross-platform.md)** - Windows, macOS, Linux
-- **[CI/CD](./ci-cd.md)** - Integração com pipelines
+Port management
 
-## 🏗️ Para Desenvolvedores
+- `port-management.md` — Explica a detecção inteligente de portas e como o `port-manager` funciona.
 
-- **[Arquitetura](./arquitetura.md)** - Como funciona internamente
-- **[Contribuindo](./contribuindo.md)** - Como colaborar com o projeto
-- **[API Reference](./api-reference.md)** - Referência das funções internas
+Cross-platform
 
-## 🔐 Segurança
+- `cross-platform.md` — Instruções específicas para Windows, macOS e Linux e notas sobre usar `.cjs` em projetos ESM.
 
-- **[Políticas de Segurança](./seguranca.md)** - Práticas de segurança implementadas
-- **[Gerenciamento de Credenciais](./credenciais.md)** - Como são geradas e armazenadas
+CI/CD
 
-## 📋 Referência Rápida
+- `ci-cd.md` — Exemplos de workflows (GitHub Actions, GitLab CI, Jenkins) e notas sobre secrets em pipelines.
 
-### 🆕 Novidades v2.0
+Troubleshooting
 
-- ✅ **Detecção Inteligente de Porta** - Sem mais conflitos entre projetos
-- ✅ **Smart Update** - Atualização que adiciona comandos novos ao package.json
-- ✅ **Gerenciamento de Credenciais** - `infra:fix` e `infra:debug`
-- ✅ **Nomes Únicos** - Containers e redes isolados por projeto
+- `troubleshooting.md` — Problemas comuns e soluções rápidas (porta em uso, autenticação, scripts faltando).
 
-### 🔌 Múltiplos Projetos na Mesma VM
+Outros
 
-O sistema automaticamente detecta portas em uso e atribui uma porta livre para cada projeto:
+- `REPLICAR-EM-PROJETOS.md` — Passo a passo para replicar a infra em outros projetos.
 
-```bash
-# Projeto 1: backlog-dim
-PORT: 5432 (primeira instalação)
+Suporte
 
-# Projeto 2: controladores-api
-PORT: 5433 (detecta 5432 em uso, usa próxima disponível)
+- Issues: https://github.com/anpdgovbr/docker-infra-pg/issues
+- Discussions: https://github.com/anpdgovbr/docker-infra-pg/discussions
 
-# Projeto 3: outro-projeto
-PORT: 5434 (detecta 5432, 5433 em uso)
-```
-
-**Configuração automática:**
-
-- ✅ Containers com nomes únicos: `projeto-postgres`
-- ✅ Redes isoladas: `projeto_network`
-- ✅ Portas salvas: `.infra/port-config.json`
-- ✅ Restauração automática da porta após restart
-
-### 📦 Comandos Essenciais
-
-```bash
-# Setup inicial
-npm run infra:setup
-
-# Múltiplos projetos (detecção automática)
-npm run infra:setup        # Projeto 1: porta 5432
-npm run infra:setup        # Projeto 2: porta 5433 (auto)
-
-# Atualização inteligente (nova!)
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart-update.js | node
-
-# Solução de problemas
-npm run infra:debug        # Diagnosticar problemas
-npm run infra:fix          # Corrigir credenciais
-
-# Gerenciamento diário
-npm run infra:up           # Subir banco
-npm run infra:down         # Parar banco
-npm run infra:logs         # Ver logs
-```
-
-## 🤝 Suporte
-
-- **[Issues](https://github.com/anpdgovbr/docker-infra-pg/issues)** - Reportar bugs ou sugerir melhorias
-- **[Discussões](https://github.com/anpdgovbr/docker-infra-pg/discussions)** - Tirar dúvidas e discutir ideias
+Se algum arquivo listado não existir no repositório, abra um issue para que o adicionemos.

@@ -19,6 +19,8 @@ Agora todos os scripts funcionam em **qualquer OS que rode Node.js!** 🎉
 > curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 > ```
 
+> Dica: muitos helpers aceitam `--show-secrets` para revelar URLs completas durante diagnóstico e `--verbose` (ou env VERBOSE=1) para mostrar stacks completos.
+
 ## 🚨 **Problemas Comuns e Soluções**
 
 ### **Problema: PowerShell cria pasta `-p`**

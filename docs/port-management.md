@@ -290,3 +290,9 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart
 - ✅ **Isolamento Total** - Containers, redes e volumes únicos
 - ✅ **Cross-Platform** - Windows, macOS, Linux
 - ✅ **CI/CD Ready** - Funciona em pipelines automatizados
+
+## 🔐 Sobre Exposição de Segredos nos Logs
+
+Por padrão a infraestrutura oculta senhas em URLs (ex.: DATABASE_URL) nos logs para evitar vazamento acidental. Para ver a URL completa durante diagnóstico, use `--show-secrets` ou a variável de ambiente `SHOW_SECRETS=1`.
+
+Para obter pilhas completas em erros, adicione `--verbose` ou `VERBOSE=1`.

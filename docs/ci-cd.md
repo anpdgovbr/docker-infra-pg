@@ -434,6 +434,10 @@ env:
 }
 ```
 
+## 🔐 Segredos em CI
+
+Por padrão os helpers mascaram senhas nos logs para evitar vazamento em pipelines. Para fins de debug/testes, use a flag `--show-secrets` ou defina `SHOW_SECRETS=1` no job de CI (com cuidado). Use `--verbose` ou `VERBOSE=1` para incluir pilhas/erros completos.
+
 ## 🛠️ Debugging CI/CD
 
 ### **Scripts de Debug**
