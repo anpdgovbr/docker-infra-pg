@@ -2,7 +2,7 @@
 [![Issues](https://img.shields.io/github/issues/anpdgovbr/docker-infra-pg)](https://github.com/anpdgovbr/docker-infra-pg/issues)
 [![Stars](https://img.shields.io/github/stars/anpdgovbr/docker-infra-pg?style=social)](https://github.com/anpdgovbr/docker-infra-pg/stargazers)
 [![Repo size](https://img.shields.io/github/repo-size/anpdgovbr/docker-infra-pg)](https://github.com/anpdgovbr/docker-infra-pg)
-[![Node](https://img.shields.io/node/v)](https://nodejs.org/)
+[![Node >=14](https://img.shields.io/badge/node-%3E%3D14-brightgreen)](https://nodejs.org/)
 
 ---
 
