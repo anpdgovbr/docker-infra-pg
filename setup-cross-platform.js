@@ -8,6 +8,59 @@ const crypto = require('crypto')
 // Arquivo escolhido para port-manager após download (ex: 'port-manager.cjs' ou 'port-manager.mjs')
 let portManagerFilename = null
 
+// Cores para output
+const colors = {
+  green: '\x1b[32m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  reset: '\x1b[0m'
+}
+
+function log(message, color = 'reset') {
+  console.log(`${colors[color]}${message}${colors.reset}`)
+}
+
+function isVerbose() {
+  return process.argv.includes('--verbose') || process.env.VERBOSE === '1'
+}
+
+// Carrega dinamicamente o módulo port-manager já baixado (ou null)
+async function loadPortManager() {
+  if (!portManagerFilename) return null
+
+  const verbose = isVerbose()
+
+  const tryRequire = file => {
+    if (typeof require !== 'function') return null
+    try {
+      return require(file)
+    } catch (e) {
+      if (verbose && e?.stack) log(e.stack, 'red')
+      return null
+    }
+  }
+
+  // Se for .cjs, tentar require diretamente
+  if (portManagerFilename.endsWith('.cjs')) {
+    return tryRequire(`./${portManagerFilename}`) || null
+  }
+
+  // Se for .mjs, tentar import dinâmico e fallback para .cjs via require
+  if (portManagerFilename.endsWith('.mjs')) {
+    try {
+      const mod = await import(`./${portManagerFilename}`)
+      return mod && (mod.default || mod)
+    } catch {
+      // tentar fallback para CommonJS
+      return tryRequire('./port-manager.cjs') || null
+    }
+  }
+
+  // fallback final: tentar carregar .cjs se existir
+  return tryRequire('./port-manager.cjs') || null
+}
+
 // Baixa a variante adequada de port-manager: prefere .cjs quando possível, usa .mjs via import se o runtime for ESM
 async function ensurePortManager() {
   // Detecta se estamos em um runtime CommonJS (require existe)
@@ -25,7 +78,7 @@ async function ensurePortManager() {
     return true
   }
 
-  console.log(`🔄 Baixando ${targetFile}...`)
+  log(`🔄 Baixando ${targetFile}...`, 'blue')
 
   const https = require('https')
 
@@ -45,9 +98,8 @@ async function ensurePortManager() {
         })
         .on('error', reject)
     })
-
     fs.writeFileSync(targetPath, data)
-    console.log(`✅ ${targetFile} baixado com sucesso!`)
+    log(`✅ ${targetFile} baixado com sucesso!`, 'green')
     portManagerFilename = targetFile
     return true
   } catch (err) {
@@ -57,7 +109,7 @@ async function ensurePortManager() {
       const fallbackPath = path.join(__dirname, fallbackFile)
       const fallbackUrl = `https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/${fallbackFile}`
       try {
-        console.log(`ℹ️  Não foi possível baixar ${targetFile} (tentando ${fallbackFile})`)
+        log(`ℹ️  Não foi possível baixar ${targetFile} (tentando ${fallbackFile})`, 'yellow')
         const data2 = await new Promise((resolve, reject) => {
           https
             .get(fallbackUrl, res => {
@@ -72,22 +124,21 @@ async function ensurePortManager() {
             })
             .on('error', reject)
         })
-
         fs.writeFileSync(fallbackPath, data2)
-        console.log(`✅ ${fallbackFile} baixado com sucesso! (fallback)`)
+        log(`✅ ${fallbackFile} baixado com sucesso! (fallback)`, 'green')
         portManagerFilename = fallbackFile
         return true
       } catch (err2) {
-        console.warn(
-          '⚠️  Não foi possível baixar port-manager (nem variante preferida nem fallback), usando detecção básica de porta'
+        log(
+          '⚠️  Não foi possível baixar port-manager (nem variante preferida nem fallback), usando detecção básica de porta',
+          'yellow'
         )
-        if (err2?.message) console.warn('Detalhes do erro:', err2.message)
+        if (err2?.message) log(`Detalhes do erro: ${err2.message}`, 'yellow')
         return false
       }
     }
-
-    console.warn('⚠️  Não foi possível baixar port-manager, usando detecção básica de porta')
-    if (err?.message) console.warn('Detalhes do erro:', err.message)
+    log('⚠️  Não foi possível baixar port-manager, usando detecção básica de porta', 'yellow')
+    if (err?.message) log(`Detalhes do erro: ${err.message}`, 'yellow')
     return false
   }
 }
@@ -97,50 +148,17 @@ async function getSmartPort() {
   const hasPortManager = await ensurePortManager()
 
   if (hasPortManager) {
-    try {
-      // carrega dinamicamente a variante baixada
-      if (
-        portManagerFilename &&
-        portManagerFilename.endsWith('.cjs') &&
-        typeof require === 'function'
-      ) {
-        const portManager = require(`./${portManagerFilename}`)
-        return await portManager.getSmartPort()
+    const pm = await loadPortManager()
+    if (pm && typeof pm.getSmartPort === 'function') {
+      try {
+        return await pm.getSmartPort()
+      } catch (err) {
+        if (isVerbose() && err?.stack) log(err.stack, 'red')
+        log(
+          '⚠️  Erro ao usar port-manager, usando detecção básica: ' + (err?.message || String(err)),
+          'yellow'
+        )
       }
-
-      if (portManagerFilename && portManagerFilename.endsWith('.mjs')) {
-        // em runtime ESM: importar dinamicamente; se o módulo for CommonJS fallback, usamos createRequire
-        try {
-          const portManager = await import(`./${portManagerFilename}`)
-          // suportar export padrão ou named
-          const pm = portManager.default || portManager
-          return await pm.getSmartPort()
-        } catch (importErr) {
-          // tentar fallback para require via createRequire (compatível com CommonJS)
-          try {
-            const { createRequire } = require('module')
-            const requireFn = createRequire(__filename)
-            const portManager = requireFn(`./port-manager.cjs`)
-            return await portManager.getSmartPort()
-          } catch (creqErr) {
-            console.warn(
-              '⚠️  Erro ao importar port-manager.mjs; usando detecção básica:',
-              importErr.message
-            )
-          }
-        }
-      }
-
-      // fallback geral: tentar carregar .cjs com require se estiver disponível
-      if (
-        typeof require === 'function' &&
-        fs.existsSync(path.join(__dirname, 'port-manager.cjs'))
-      ) {
-        const portManager = require('./port-manager.cjs')
-        return await portManager.getSmartPort()
-      }
-    } catch (error) {
-      console.warn('⚠️  Erro ao usar port-manager, usando detecção básica:', error.message)
     }
   }
 
@@ -172,12 +190,12 @@ async function getSmartPort() {
   // Testa portas comuns PostgreSQL
   for (let port = 5432; port <= 5450; port++) {
     if (await isPortAvailable(port)) {
-      console.log(`🎯 Porta ${port} disponível (detecção básica)`)
+      log(`🎯 Porta ${port} disponível (detecção básica)`, 'green')
       return port
     }
   }
 
-  console.warn('⚠️  Nenhuma porta padrão disponível, usando 5432')
+  log('⚠️  Nenhuma porta padrão disponível, usando 5432', 'yellow')
   return 5432
 }
 
@@ -237,6 +255,21 @@ function parseDatabaseUrl(databaseUrl) {
     }
   } catch {
     return {}
+  }
+}
+
+// Mascara a senha na DATABASE_URL para logs
+function maskDatabaseUrl(databaseUrl) {
+  if (!databaseUrl) return databaseUrl
+  try {
+    const u = new URL(databaseUrl)
+    if (u.password) {
+      u.password = '****'
+    }
+    return u.toString()
+  } catch {
+    // fallback simples: substituir :<senha>@ por :****@
+    return databaseUrl.replace(/:([^:@]+)@/, ':****@')
   }
 }
 
@@ -382,16 +415,16 @@ function updateEnvFile(config) {
 
 // Função principal
 async function main() {
-  console.log('🚀 Configurando infraestrutura PostgreSQL com detecção inteligente de porta...\n')
+  log('🚀 Configurando infraestrutura PostgreSQL com detecção inteligente de porta...\n', 'blue')
 
   try {
     // Detectar configuração do projeto
     const { projectName: _projectName, envConfig } = detectProjectConfig()
     const projectName = _projectName
-    console.log(`📦 Projeto detectado: ${projectName}`)
+    log(`📦 Projeto detectado: ${projectName}`, 'blue')
 
     // Detectar porta inteligente
-    console.log('🔍 Detectando porta disponível...')
+    log('🔍 Detectando porta disponível...', 'blue')
     const port = await getSmartPort()
 
     // Extrair dados existentes da DATABASE_URL
@@ -409,11 +442,11 @@ async function main() {
       password: existingDb.password || envConfig.POSTGRES_PASSWORD || generateSecurePassword()
     }
 
-    console.log('📋 Configuração final:')
-    console.log(`   🎯 Porta: ${dbConfig.port}`)
-    console.log(`   🗄️  Banco: ${dbConfig.dbName}`)
-    console.log(`   👤 Usuário: ${dbConfig.username}`)
-    console.log(`   🔐 Senha: ${'*'.repeat(dbConfig.password.length)}`)
+    log('📋 Configuração final:', 'blue')
+    log(`   🎯 Porta: ${dbConfig.port}`, 'blue')
+    log(`   🗄️  Banco: ${dbConfig.dbName}`, 'blue')
+    log(`   👤 Usuário: ${dbConfig.username}`, 'blue')
+    log(`   🔐 Senha: ${'*'.repeat(dbConfig.password.length)}`, 'blue')
 
     // Criar pasta infra-db se não existir
     const infraPath = path.join(process.cwd(), 'infra-db')
@@ -428,41 +461,53 @@ async function main() {
     }
 
     // Criar arquivos
-    console.log('\n📝 Criando arquivos...')
+    log('\n📝 Criando arquivos...', 'blue')
 
     // docker-compose.yml
     const dockerComposePath = path.join(infraPath, 'docker-compose.yml')
     fs.writeFileSync(dockerComposePath, createDockerCompose(dbConfig))
-    console.log('✅ docker-compose.yml criado')
+    log('✅ docker-compose.yml criado', 'green')
 
     // Script de inicialização
     const initScriptPath = path.join(initPath, '01-create-app-database.sh')
     fs.writeFileSync(initScriptPath, createInitScript(dbConfig))
-    console.log('✅ Script de inicialização criado')
+    log('✅ Script de inicialização criado', 'green')
 
     // Atualizar .env
     const databaseUrl = updateEnvFile(dbConfig)
-    console.log('✅ .env atualizado')
+    log('✅ .env atualizado', 'green')
 
-    console.log('\n🎉 Infraestrutura configurada com sucesso!')
+    log('\n🎉 Infraestrutura configurada com sucesso!', 'green')
 
     // Opção recomendada para a maioria dos usuários (usa os scripts do package.json)
-    console.log('\n� Recomendado (mais simples):')
-    console.log('   1. npm run infra:up')
-    console.log('   2. Aguarde ~30s para inicialização completa')
+    log('\n� Recomendado (mais simples):', 'blue')
+    log('   1. npm run infra:up', 'blue')
+    log('   2. Aguarde ~30s para inicialização completa', 'blue')
 
     // Alternativa manual para usuários avançados
-    console.log('\n📋 Alternativa manual:')
-    console.log('   1. cd infra-db')
-    console.log('   2. docker-compose up -d')
-    console.log('   3. Aguarde ~30s para inicialização completa')
-    console.log(`   4. Teste a conexão: psql "${databaseUrl}"`)
-    console.log('   5. Execute suas migrations/seeds')
+    log('\n📋 Alternativa manual:', 'blue')
+    log('   1. cd infra-db', 'blue')
+    log('   2. docker-compose up -d', 'blue')
+    log('   3. Aguarde ~30s para inicialização completa', 'blue')
+    log(`   4. Teste a conexão: psql "${databaseUrl}"`, 'blue')
+    log('   5. Execute suas migrations/seeds', 'blue')
 
-    console.log('\n🔗 DATABASE_URL configurada:')
-    console.log(`   ${databaseUrl}`)
+    const args = process.argv.slice(2)
+    const showSecrets = args.includes('--show-secrets') || process.env.SHOW_SECRETS === '1'
+
+    log('\n🔗 DATABASE_URL configurada:', 'blue')
+    if (showSecrets) {
+      log(`   ${databaseUrl}`, 'yellow')
+    } else {
+      log(`   ${maskDatabaseUrl(databaseUrl)}`, 'yellow')
+      log(
+        '   ℹ️  Senha oculta nos logs. Use --show-secrets ou SHOW_SECRETS=1 para ver a URL completa',
+        'yellow'
+      )
+    }
   } catch (error) {
-    console.error('❌ Erro durante a configuração:', error.message)
+    log('❌ Erro durante a configuração: ' + (error?.message || String(error)), 'red')
+    if (isVerbose() && error?.stack) log(error.stack, 'red')
     process.exit(1)
   }
 }
