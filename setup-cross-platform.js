@@ -480,7 +480,7 @@ async function main() {
     log('\n🎉 Infraestrutura configurada com sucesso!', 'green')
 
     // Opção recomendada para a maioria dos usuários (usa os scripts do package.json)
-    log('\n� Recomendado (mais simples):', 'blue')
+    log('\n✨ Recomendado (mais simples):', 'blue')
     log('   1. npm run infra:up', 'blue')
     log('   2. Aguarde ~30s para inicialização completa', 'blue')
 

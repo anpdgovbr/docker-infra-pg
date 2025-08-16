@@ -32,6 +32,58 @@ function isESModuleProject() {
   }
 }
 
+// Função auxiliar para lidar com o fechamento do processo filho
+function handleChildClose(tempFile, resolve, reject, code) {
+  try {
+    fs.unlinkSync(tempFile)
+  } catch (error) {
+    log(`⚠️  Aviso ao remover arquivo temporário: ${error.message}`, 'yellow')
+  }
+
+  if (code === 0) {
+    resolve()
+  } else {
+    reject(new Error(`Processo terminou com código ${code}`))
+  }
+}
+
+// Função auxiliar para executar o script baixado
+function executeUpdateScript(tempFile, resolve, reject) {
+  log('🚀 Executando atualização completa...', 'blue')
+  const { spawn } = require('child_process')
+
+  const child = spawn('node', [tempFile], {
+    stdio: 'inherit',
+    cwd: process.cwd()
+  })
+
+  child.on('close', code => handleChildClose(tempFile, resolve, reject, code))
+  child.on('error', reject)
+}
+
+// Função auxiliar para processar o fim do download
+function handleDownloadEnd(tempFile, data, resolve, reject) {
+  try {
+    fs.writeFileSync(tempFile, data)
+    log('✅ Script de atualização baixado', 'green')
+    executeUpdateScript(tempFile, resolve, reject)
+  } catch (error) {
+    reject(error)
+  }
+}
+
+// Função auxiliar para processar a resposta HTTP
+function handleHttpResponse(response, tempFile, resolve, reject, url) {
+  if (response.statusCode !== 200) {
+    reject(new Error(`HTTP ${response.statusCode}: ${url}`))
+    return
+  }
+
+  let data = ''
+  response.on('data', chunk => (data += chunk))
+  response.on('end', () => handleDownloadEnd(tempFile, data, resolve, reject))
+}
+
 // Download do update-scripts.js e execução
 async function downloadAndRunUpdate() {
   return new Promise((resolve, reject) => {
@@ -49,49 +101,7 @@ async function downloadAndRunUpdate() {
     const url = 'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/update-scripts.js'
 
     https
-      .get(url, response => {
-        if (response.statusCode !== 200) {
-          reject(new Error(`HTTP ${response.statusCode}: ${url}`))
-          return
-        }
-
-        let data = ''
-        response.on('data', chunk => (data += chunk))
-        response.on('end', () => {
-          try {
-            fs.writeFileSync(tempFile, data)
-            log('✅ Script de atualização baixado', 'green')
-
-            // Executa o script de atualização
-            log('🚀 Executando atualização completa...', 'blue')
-            const { spawn } = require('child_process')
-
-            const child = spawn('node', [tempFile], {
-              stdio: 'inherit',
-              cwd: process.cwd()
-            })
-
-            child.on('close', code => {
-              // Remove arquivo temporário
-              try {
-                fs.unlinkSync(tempFile)
-              } catch (error) {
-                // Ignora erro ao remover arquivo temporário
-              }
-
-              if (code === 0) {
-                resolve()
-              } else {
-                reject(new Error(`Processo terminou com código ${code}`))
-              }
-            })
-
-            child.on('error', reject)
-          } catch (error) {
-            reject(error)
-          }
-        })
-      })
+      .get(url, response => handleHttpResponse(response, tempFile, resolve, reject, url))
       .on('error', reject)
   })
 }

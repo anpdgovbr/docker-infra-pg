@@ -254,7 +254,7 @@ if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
         3)
             echo "📝 Ajuste manualmente as seguintes variáveis no seu .env:"
             [[ -z "$DB_NAME" || "$DB_NAME" == "" ]] && echo "   POSTGRES_DB=${APP_NAME}_dev"
-            [[ -z "$DB_USER" || "$DB_USER" == "" || -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && echo "   DATABASE_URL=\"postgresql://usuario:senha@localhost:5432/banco?schema=public\""
+            [[ -z "$DB_USER" || "$DB_USER" == "" || -z "$DB_PASSWORD" || "$DB_PASSWORD" == "" ]] && echo "   DATABASE_URL=\"postgresql://<usuario>:<senha>@localhost:5432/<banco>?schema=public\""
             echo
             echo "Execute este script novamente após os ajustes."
             echo "💡 Dica: Use --auto para gerar automaticamente ou --manual para informar via prompt"
