@@ -6,11 +6,11 @@
 
 ---
 
-# 🐘 Docker PostgreSQL Infrastructure ANPD
+# 🐘 Docker PostgreSQL Infrastructure ANPD (RBAC opcional)
+
+Aviso: este guia descreve como usar a infra com um cenário RBAC de desenvolvimento. O uso do RBAC é 100% opcional. A infraestrutura funciona de forma independente, sem qualquer pacote de RBAC, e mantém sua proposta original de ser reutilizável e parametrizável para qualquer projeto.
 
 > **Infraestrutura PostgreSQL padronizada para projetos da ANPD com setup automatizado e detecção inteligente de porta.**
-
-> RBAC (opcional): esta infraestrutura funciona de forma independente do RBAC. Se desejar usar em conjunto com um projeto que possua RBAC, há um guia específico em `docs/rbac-dev-setup.md`, mas não é obrigatório.
 
 ## 🌟 **NOVO v0.2.0: Detecção Inteligente de Porta!**
 
@@ -107,10 +107,6 @@ Use o README para um resumo rápido e os arquivos em `docs/` para detalhes passo
 - `docs/ci-cd.md` — Exemplos e boas práticas para pipelines
 - `docs/troubleshooting.md` — Problemas comuns e soluções rápidas
 - `docs/REPLICAR-EM-PROJETOS.md` — Instruções para replicar em múltiplos projetos
-  
-RBAC (opcional):
-- `docs/rbac-dev-setup.md` — Guia de ambiente para projetos que usam RBAC
-- `docs/rbac-roadmap.md` — Itens específicos de integração com RBAC
 
 ---
 
