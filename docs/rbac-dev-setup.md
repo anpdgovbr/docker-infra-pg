@@ -241,3 +241,12 @@ Para problemas mais complexos veja `docs/`:
 ---
 
 Versão atual: v0.2.0 — documentação consolidada para uso local e CI.
+## Esquema esperado (resumo)
+
+- Tabelas: `Perfil`, `Permissao`, `PerfilHeranca` (nomes podem variar; o adapter permite mapear).
+- Regras: união de permissões por grant verdadeiro; perfis inativos não contam; herança forma uma DAG.
+
+## Próximos passos
+
+- Adicionar aqui o README completo do `docker-infra-pg` para referência única.
+
