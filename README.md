@@ -96,6 +96,24 @@ Próximos passos:
 
 ---
 
+## 🔌 Compatibilidade Multi‑Stack (Opcional, via .env.example)
+
+Os scripts agora detectam e preenchem variáveis comuns de banco para stacks populares — somente se essas variáveis existirem no seu `.env.example`. Mantêm valores já existentes no `.env` e preenchem apenas os que estiverem vazios/ausentes.
+
+- Keycloak: `KEYCLOAK_ADMIN_PASSWORD`, `KEYCLOAK_DB_PASSWORD` (senhas seguras geradas)
+- Genéricas: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_USERNAME`, `DB_PASSWORD`
+- psql: `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`
+- NestJS/TypeORM: `TYPEORM_HOST`, `TYPEORM_PORT`, `TYPEORM_USERNAME`, `TYPEORM_PASSWORD`, `TYPEORM_DATABASE`
+- Spring Boot: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
+- Quarkus: `QUARKUS_DATASOURCE_DB_KIND`, `QUARKUS_DATASOURCE_JDBC_URL`, `QUARKUS_DATASOURCE_USERNAME`, `QUARKUS_DATASOURCE_PASSWORD`
+
+Notas:
+- Se seu projeto não usa Keycloak ou não declara essas variáveis, nada é alterado.
+- A `DATABASE_URL` e `POSTGRES_*` continuam sendo atualizadas como parte do setup da infra local.
+- Para exemplos por stack, veja `docs/REPLICAR-EM-PROJETOS.md`.
+
+---
+
 ## Índice rápido e detalhado
 
 Use o README para um resumo rápido e os arquivos em `docs/` para detalhes passo-a-passo:

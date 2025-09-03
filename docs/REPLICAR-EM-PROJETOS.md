@@ -251,6 +251,82 @@ NODE_ENV=development
 JWT_SECRET=your-jwt-secret
 ```
 
+### **Projeto NestJS (TypeORM):**
+
+Coloque apenas as variáveis que deseja que o setup preencha/mantenha. O script só altera as que estiverem listadas no seu .env.example.
+
+```bash
+# 📊 BANCO DE DADOS
+POSTGRES_DB=meu_nest_dev
+DATABASE_URL="postgresql://user:password@localhost:5432/meu_nest_dev?schema=public"
+
+# 🔧 TypeORM (opcional, se preferir separar do DATABASE_URL)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=meu_nest_dev
+DB_USERNAME=nest_user
+DB_PASSWORD=
+
+# Ou keyspace TypeORM específico
+TYPEORM_HOST=localhost
+TYPEORM_PORT=5432
+TYPEORM_USERNAME=nest_user
+TYPEORM_PASSWORD=
+TYPEORM_DATABASE=meu_nest_dev
+```
+
+### **Projeto React (puro):**
+
+Normalmente não acessa banco diretamente, então não precisa de variáveis de DB. O script ignora quando não há variáveis no .env.example.
+
+```bash
+# 🌐 FRONT-END
+VITE_API_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+### **Projeto Spring Boot:**
+
+```bash
+# 📊 BANCO DE DADOS
+POSTGRES_DB=app_spring_dev
+DATABASE_URL="postgresql://user:password@localhost:5432/app_spring_dev?schema=public"
+
+# 🔌 Datasource (opcional)
+SPRING_DATASOURCE_URL=
+SPRING_DATASOURCE_USERNAME=
+SPRING_DATASOURCE_PASSWORD=
+```
+
+Se `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` estiverem vazios, o setup preencherá com `jdbc:postgresql://localhost:5432/<db>` e usuário/senha correspondentes.
+
+### **Projeto Quarkus:**
+
+```bash
+# 📊 BANCO DE DADOS
+POSTGRES_DB=app_quarkus_dev
+DATABASE_URL="postgresql://user:password@localhost:5432/app_quarkus_dev?schema=public"
+
+# 🔌 Datasource (opcional)
+QUARKUS_DATASOURCE_DB_KIND=postgresql
+QUARKUS_DATASOURCE_JDBC_URL=
+QUARKUS_DATASOURCE_USERNAME=
+QUARKUS_DATASOURCE_PASSWORD=
+```
+
+### **Keycloak (iam-deploy):**
+
+```bash
+# Senhas para Keycloak (preenchidas automaticamente quando vazias)
+KEYCLOAK_ADMIN_PASSWORD=
+KEYCLOAK_DB_PASSWORD=
+```
+
+Observações:
+- Valores já existentes no `.env` são preservados.
+- Valores vazios são preenchidos com senhas seguras.
+- Variáveis não listadas no `.env.example` são ignoradas (não são adicionadas automaticamente).
+
 ### **Projeto em Produção:**
 
 ```bash

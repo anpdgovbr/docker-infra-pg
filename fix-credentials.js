@@ -8,6 +8,7 @@
 const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process')
+const crypto = require('crypto')
 
 // Cores para output
 const colors = {
@@ -40,6 +41,107 @@ function readEnvFile(filePath) {
   } catch {
     return null
   }
+}
+
+function generateSecurePassword() {
+  return crypto.randomBytes(16).toString('hex')
+}
+
+function parseEnvContentToMap(content) {
+  const map = {}
+  content.split('\n').forEach(line => {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) return
+    const [key, ...valueParts] = trimmed.split('=')
+    if (key && valueParts.length > 0) {
+      map[key.trim()] = valueParts.join('=').trim()
+    }
+  })
+  return map
+}
+
+function updateEnvFileIfExampleExists({ dbName, dbUser, dbPassword, dbPort }) {
+  const projectRoot = process.cwd()
+  const envPath = path.join(projectRoot, '.env')
+  const envExamplePath = path.join(projectRoot, '.env.example')
+
+  if (!fs.existsSync(envExamplePath) || !fs.existsSync(envPath)) return
+
+  let envContent = fs.readFileSync(envPath, 'utf8')
+  const existing = parseEnvContentToMap(envContent)
+  const exampleContent = fs.readFileSync(envExamplePath, 'utf8')
+  const example = parseEnvContentToMap(exampleContent)
+
+  const hasKey = k => Object.prototype.hasOwnProperty.call(example, k)
+  const getOr = (k, v) => {
+    const cur = existing[k]
+    const empty = !cur || cur.replace(/^\"|\"$/g, '').trim() === ''
+    return empty ? v : cur
+  }
+
+  // Keycloak secrets (opcionais)
+  if (hasKey('KEYCLOAK_ADMIN_PASSWORD')) {
+    const val = getOr('KEYCLOAK_ADMIN_PASSWORD', generateSecurePassword())
+    const re = /^KEYCLOAK_ADMIN_PASSWORD=.*$/m
+    envContent = re.test(envContent)
+      ? envContent.replace(re, `KEYCLOAK_ADMIN_PASSWORD=${val}`)
+      : envContent + `${envContent && !envContent.endsWith('\n') ? '\n' : ''}KEYCLOAK_ADMIN_PASSWORD=${val}\n`
+  }
+  if (hasKey('KEYCLOAK_DB_PASSWORD')) {
+    const val = getOr('KEYCLOAK_DB_PASSWORD', generateSecurePassword())
+    const re = /^KEYCLOAK_DB_PASSWORD=.*$/m
+    envContent = re.test(envContent)
+      ? envContent.replace(re, `KEYCLOAK_DB_PASSWORD=${val}`)
+      : envContent + `${envContent && !envContent.endsWith('\n') ? '\n' : ''}KEYCLOAK_DB_PASSWORD=${val}\n`
+  }
+
+  // Stacks comuns (apenas se declarado no .env.example)
+  const jdbcUrl = `jdbc:postgresql://localhost:${dbPort || 5432}/${dbName}`
+  const candidates = {
+    // Genéricos
+    DB_HOST: 'localhost',
+    DB_PORT: String(dbPort || 5432),
+    DB_NAME: dbName,
+    DB_USER: dbUser,
+    DB_USERNAME: dbUser,
+    DB_PASSWORD: dbPassword,
+
+    // psql
+    PGHOST: 'localhost',
+    PGPORT: String(dbPort || 5432),
+    PGDATABASE: dbName,
+    PGUSER: dbUser,
+    PGPASSWORD: dbPassword,
+
+    // NestJS (TypeORM)
+    TYPEORM_HOST: 'localhost',
+    TYPEORM_PORT: String(dbPort || 5432),
+    TYPEORM_USERNAME: dbUser,
+    TYPEORM_PASSWORD: dbPassword,
+    TYPEORM_DATABASE: dbName,
+
+    // Spring Boot
+    SPRING_DATASOURCE_URL: jdbcUrl,
+    SPRING_DATASOURCE_USERNAME: dbUser,
+    SPRING_DATASOURCE_PASSWORD: dbPassword,
+
+    // Quarkus
+    QUARKUS_DATASOURCE_DB_KIND: 'postgresql',
+    QUARKUS_DATASOURCE_JDBC_URL: jdbcUrl,
+    QUARKUS_DATASOURCE_USERNAME: dbUser,
+    QUARKUS_DATASOURCE_PASSWORD: dbPassword
+  }
+
+  Object.entries(candidates).forEach(([k, v]) => {
+    if (!hasKey(k)) return
+    const val = getOr(k, v)
+    const re = new RegExp(`^${k}=.*$`, 'm')
+    envContent = re.test(envContent)
+      ? envContent.replace(re, `${k}=${val}`)
+      : envContent + `${envContent && !envContent.endsWith('\n') ? '\n' : ''}${k}=${val}\n`
+  })
+
+  fs.writeFileSync(envPath, envContent)
 }
 
 // Gera docker-compose.yml com credenciais corretas e porta inteligente
@@ -203,6 +305,10 @@ POSTGRES_PORT=${dbPort}
 DATABASE_URL="postgresql://${dbUser}:${dbPassword}@localhost:${dbPort}/${dbName}"
 `
     fs.writeFileSync(infraEnvPath, infraEnvContent)
+
+    // Atualiza o .env do projeto com variáveis opcionais (se declaradas no .env.example)
+    log('📝 Harmonizando .env do projeto com stacks suportadas...', 'blue')
+    updateEnvFileIfExampleExists({ dbName, dbUser, dbPassword, dbPort })
 
     // Inicia containers com novas credenciais
     log('🚀 Iniciando container com credenciais corretas...', 'green')

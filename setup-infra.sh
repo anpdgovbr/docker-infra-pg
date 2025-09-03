@@ -322,6 +322,87 @@ update_env_var() {
 update_env_var "POSTGRES_DB" "$DB_NAME" ".env"
 update_env_var "DATABASE_URL" "$NEW_DATABASE_URL" ".env"
 
+# Se existir .env.example com variáveis do Keycloak, aplicar mesma lógica do Postgres
+if [[ -f ".env.example" ]]; then
+  # Detectar chaves suportadas
+  declare -a KC_VARS
+  KC_VARS=()
+  if grep -q '^KEYCLOAK_ADMIN_PASSWORD=' .env.example; then
+    KC_VARS+=("KEYCLOAK_ADMIN_PASSWORD")
+  fi
+  if grep -q '^KEYCLOAK_DB_PASSWORD=' .env.example; then
+    KC_VARS+=("KEYCLOAK_DB_PASSWORD")
+  fi
+
+  if [[ ${#KC_VARS[@]} -gt 0 ]]; then
+    echo "🔐 Gerenciando segredos do Keycloak conforme .env.example..."
+    for var in "${KC_VARS[@]}"; do
+      # Ler valor atual do .env (se houver)
+      CURRENT_VAL=$(grep -E "^${var}=" .env 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//;s/\"$//' || echo "")
+      if [[ -z "$CURRENT_VAL" ]]; then
+        # Gerar novo valor seguro quando vazio/ausente
+        GEN=$(openssl rand -base64 16 | tr -d "=+/" | cut -c1-24)
+        update_env_var "$var" "$GEN" ".env"
+      else
+        # Manter valor existente
+        update_env_var "$var" "$CURRENT_VAL" ".env"
+      fi
+    done
+  fi
+fi
+
+# Compatibilidade com stacks comuns: se .env.example declarar, preencher/atualizar
+if [[ -f ".env.example" ]]; then
+  echo "🔄 Ajustando variáveis comuns conforme .env.example..."
+
+  # Helper para decidir valor: mantém o existente se houver; caso contrário, usa o proposto
+  decide_and_update() {
+    local var="$1"; shift
+    local value="$1"; shift
+    local current=$(grep -E "^${var}=" .env 2>/dev/null | cut -d'=' -f2- | sed 's/^\"//;s/\"$//' || echo "")
+    if [[ -z "$current" ]]; then
+      update_env_var "$var" "$value" ".env"
+    else
+      update_env_var "$var" "$current" ".env"
+    fi
+  }
+
+  JDBC_URL="jdbc:postgresql://localhost:5432/$DB_NAME"
+
+  # Genéricos (NestJS/TypeORM e afins)
+  grep -q '^DB_HOST=' .env.example       && decide_and_update DB_HOST localhost
+  grep -q '^DB_PORT=' .env.example       && decide_and_update DB_PORT 5432
+  grep -q '^DB_NAME=' .env.example       && decide_and_update DB_NAME "$DB_NAME"
+  grep -q '^DB_USER=' .env.example       && decide_and_update DB_USER "$DB_USER"
+  grep -q '^DB_USERNAME=' .env.example   && decide_and_update DB_USERNAME "$DB_USER"
+  grep -q '^DB_PASSWORD=' .env.example   && decide_and_update DB_PASSWORD "$DB_PASSWORD"
+
+  # Variáveis padrão psql
+  grep -q '^PGHOST=' .env.example        && decide_and_update PGHOST localhost
+  grep -q '^PGPORT=' .env.example        && decide_and_update PGPORT 5432
+  grep -q '^PGDATABASE=' .env.example    && decide_and_update PGDATABASE "$DB_NAME"
+  grep -q '^PGUSER=' .env.example        && decide_and_update PGUSER "$DB_USER"
+  grep -q '^PGPASSWORD=' .env.example    && decide_and_update PGPASSWORD "$DB_PASSWORD"
+
+  # NestJS (TypeORM)
+  grep -q '^TYPEORM_HOST=' .env.example       && decide_and_update TYPEORM_HOST localhost
+  grep -q '^TYPEORM_PORT=' .env.example       && decide_and_update TYPEORM_PORT 5432
+  grep -q '^TYPEORM_USERNAME=' .env.example   && decide_and_update TYPEORM_USERNAME "$DB_USER"
+  grep -q '^TYPEORM_PASSWORD=' .env.example   && decide_and_update TYPEORM_PASSWORD "$DB_PASSWORD"
+  grep -q '^TYPEORM_DATABASE=' .env.example   && decide_and_update TYPEORM_DATABASE "$DB_NAME"
+
+  # Spring Boot
+  grep -q '^SPRING_DATASOURCE_URL=' .env.example        && decide_and_update SPRING_DATASOURCE_URL "$JDBC_URL"
+  grep -q '^SPRING_DATASOURCE_USERNAME=' .env.example   && decide_and_update SPRING_DATASOURCE_USERNAME "$DB_USER"
+  grep -q '^SPRING_DATASOURCE_PASSWORD=' .env.example   && decide_and_update SPRING_DATASOURCE_PASSWORD "$DB_PASSWORD"
+
+  # Quarkus
+  grep -q '^QUARKUS_DATASOURCE_DB_KIND=' .env.example   && decide_and_update QUARKUS_DATASOURCE_DB_KIND postgresql
+  grep -q '^QUARKUS_DATASOURCE_JDBC_URL=' .env.example  && decide_and_update QUARKUS_DATASOURCE_JDBC_URL "$JDBC_URL"
+  grep -q '^QUARKUS_DATASOURCE_USERNAME=' .env.example  && decide_and_update QUARKUS_DATASOURCE_USERNAME "$DB_USER"
+  grep -q '^QUARKUS_DATASOURCE_PASSWORD=' .env.example  && decide_and_update QUARKUS_DATASOURCE_PASSWORD "$DB_PASSWORD"
+fi
+
 echo "✅ Arquivo .env do projeto atualizado com as configurações finais!"
 echo
 

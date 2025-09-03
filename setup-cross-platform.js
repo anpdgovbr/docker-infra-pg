@@ -371,11 +371,13 @@ function updateEnvFile(config) {
   const { port, dbName, username, password } = config
   const projectRoot = process.cwd()
   const envPath = path.join(projectRoot, '.env')
+  const envExamplePath = path.join(projectRoot, '.env.example')
 
   const databaseUrl = `postgresql://${username}:${password}@localhost:${port}/${dbName}?schema=public`
 
   let envContent = ''
   let existingEnv = {}
+  let exampleEnv = {}
 
   // Ler .env existente
   if (fs.existsSync(envPath)) {
@@ -391,6 +393,23 @@ function updateEnvFile(config) {
     })
   }
 
+  // Ler .env.example (se existir) para detectar variáveis opcionais, como as do Keycloak
+  if (fs.existsSync(envExamplePath)) {
+    try {
+      const exampleContent = fs.readFileSync(envExamplePath, 'utf8')
+      exampleContent.split('\n').forEach(line => {
+        const trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith('#')) return
+        const [key, ...valueParts] = trimmed.split('=')
+        if (key && valueParts.length > 0) {
+          exampleEnv[key.trim()] = valueParts.join('=').trim()
+        }
+      })
+    } catch {
+      // Ignorar erros ao ler .env.example
+    }
+  }
+
   // Atualizar ou adicionar variáveis
   const envVars = {
     POSTGRES_DB: dbName,
@@ -398,6 +417,68 @@ function updateEnvFile(config) {
     POSTGRES_PASSWORD: password,
     DATABASE_URL: `"${databaseUrl}"`
   }
+
+  // Se o projeto declarar variáveis do Keycloak em .env.example, aplicar mesma lógica do Postgres
+  const keycloakVars = ['KEYCLOAK_ADMIN_PASSWORD', 'KEYCLOAK_DB_PASSWORD']
+  keycloakVars.forEach(k => {
+    if (Object.prototype.hasOwnProperty.call(exampleEnv, k)) {
+      // Manter se já existe com valor; gerar se ausente ou vazio
+      const current = existingEnv[k]
+      const shouldGenerate = !current || current.replace(/^"|"$/g, '').trim() === ''
+      envVars[k] = shouldGenerate ? generateSecurePassword() : current
+    }
+  })
+
+  // Compatibilidade com stacks comuns (NestJS/TypeORM, Spring Boot, Quarkus, psql)
+  // Só preenche se a variável existir no .env.example para evitar poluir o .env
+  const decide = (key, value) => {
+    const current = existingEnv[key]
+    const isEmpty = !current || current.replace(/^\"|\"$/g, '').trim() === ''
+    return isEmpty ? value : current
+  }
+
+  const jdbcUrl = `jdbc:postgresql://localhost:${port}/${dbName}`
+
+  const candidates = {
+    // Genéricos
+    DB_HOST: 'localhost',
+    DB_PORT: String(port),
+    DB_NAME: dbName,
+    DB_USER: username,
+    DB_USERNAME: username,
+    DB_PASSWORD: password,
+
+    // Variáveis padrão psql
+    PGHOST: 'localhost',
+    PGPORT: String(port),
+    PGDATABASE: dbName,
+    PGUSER: username,
+    PGPASSWORD: password,
+
+    // NestJS (TypeORM)
+    TYPEORM_HOST: 'localhost',
+    TYPEORM_PORT: String(port),
+    TYPEORM_USERNAME: username,
+    TYPEORM_PASSWORD: password,
+    TYPEORM_DATABASE: dbName,
+
+    // Spring Boot
+    SPRING_DATASOURCE_URL: jdbcUrl,
+    SPRING_DATASOURCE_USERNAME: username,
+    SPRING_DATASOURCE_PASSWORD: password,
+
+    // Quarkus
+    QUARKUS_DATASOURCE_DB_KIND: 'postgresql',
+    QUARKUS_DATASOURCE_JDBC_URL: jdbcUrl,
+    QUARKUS_DATASOURCE_USERNAME: username,
+    QUARKUS_DATASOURCE_PASSWORD: password
+  }
+
+  Object.entries(candidates).forEach(([k, v]) => {
+    if (Object.prototype.hasOwnProperty.call(exampleEnv, k)) {
+      envVars[k] = decide(k, v)
+    }
+  })
 
   Object.entries(envVars).forEach(([key, value]) => {
     const regex = new RegExp(`^${key}=.*$`, 'm')
