@@ -3,11 +3,16 @@
 /**
  * Auto Setup para Projetos ANPD
  * Configura infraestrutura PostgreSQL automaticamente
+ * Funciona tanto via pipe quanto via download direto
  */
 
 const fs = require('fs')
 const _path = require('path')
-const { execSync: _execSync } = require('child_process')
+const { execSync } = require('child_process')
+const os = require('os')
+
+// Detecta se está sendo executado via pipe
+const isRunningViaPipe = !process.stdin.isTTY && process.argv[1] === '/dev/stdin'
 
 // Cores para output
 const colors = {
@@ -178,8 +183,53 @@ function main() {
     log('Docs: https://github.com/anpdgovbr/docker-infra-pg', 'yellow')
     process.exit(0)
   }
+
+  // Detecta se está sendo executado via pipe
+  const isViaPipe = !process.stdin.isTTY && process.argv[1] === 'stdin'
+
+  if (isViaPipe) {
+    // Quando executado via pipe, usar estratégia de download
+    log('🚀 Quick Setup Cross-Platform', 'green')
+    log(`📊 SO detectado: ${os.platform()} ${os.arch()}`, 'blue')
+
+    // Verifica se há package.json no diretório atual
+    if (!fs.existsSync('package.json')) {
+      log(`⚠️  Nenhum package.json encontrado no diretório atual`, 'yellow')
+      log(`💡 Este comando deve ser executado na raiz de um projeto Node.js`, 'blue')
+      log(`� Diretório atual: ${process.cwd()}`, 'reset')
+      process.exit(1)
+    }
+
+    try {
+      // Detecta SO
+      const platform = os.platform()
+      const isWindows = platform === 'win32'
+      const deleteCommand = isWindows ? 'del' : 'rm'
+
+      // URL do script atual
+      const scriptUrl =
+        'https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js'
+
+      // Comando para download e execução
+      const command = `curl -sSL ${scriptUrl} -o temp-setup.cjs && node temp-setup.cjs && ${deleteCommand} temp-setup.cjs`
+
+      log(`💻 Executando: ${command}`, 'blue')
+
+      execSync(command, {
+        stdio: 'inherit',
+        shell: true
+      })
+
+      log(`✅ Setup concluído!`, 'green')
+    } catch (error) {
+      log(`❌ Erro durante setup: ${error.message}`, 'red')
+      process.exit(1)
+    }
+    return
+  }
+
   try {
-    log('🚀 Configurando Infraestrutura PostgreSQL ANPD', 'green')
+    log('�🚀 Configurando Infraestrutura PostgreSQL ANPD', 'green')
 
     // Verificações
     if (!isNodeProject()) {

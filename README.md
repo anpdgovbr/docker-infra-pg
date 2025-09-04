@@ -20,8 +20,11 @@
 ### Para novos projetos
 
 ```bash
-# Um comando para configurar tudo
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+# Método recomendado (100% compatível)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
+
+# Método alternativo (download direto)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o setup.js && node setup.js && rm setup.js
 
 # Configurar infraestrutura
 npm run infra:setup
@@ -34,7 +37,10 @@ npm run dev
 
 ```bash
 # Setup automático (preserva configurações existentes)
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
+
+# Método alternativo se necessário
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o setup.js && node setup.js && rm setup.js
 
 # Configurar (preserva dados do .env existente)
 npm run infra:setup

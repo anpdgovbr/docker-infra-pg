@@ -127,10 +127,23 @@ Error [ERR_REQUIRE_ESM]: require() of ES modules is not supported
 
 #### Para Projetos CommonJS (padrão)
 
+````bash
+## 🚀 Comandos de Setup
+
+### **Quick-Setup (Método Recomendado)**
 ```bash
-# Funciona diretamente
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
+````
+
+### **Auto-Setup (Download Direto)**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o setup.js && node setup.js && rm setup.js
 ```
+
+> 💡 **Quick-setup é mais robusto** para execução via pipe em todos os ambientes (Windows, macOS, Linux).
+
+````
 
 #### Para Projetos ES Modules (`"type": "module"`)
 
@@ -140,7 +153,7 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-
 
 # macOS/Linux
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && rm temp-setup.cjs
-```
+````
 
 ### Detecção Automática no Auto-Setup
 

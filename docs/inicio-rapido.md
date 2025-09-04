@@ -13,11 +13,23 @@
 
 ### Passo 1: Executar Auto-Setup
 
-**Para qualquer projeto (recomendado):**
+**Método Principal (100% Compatível):**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
 ```
+
+**Método Alternativo (Download Direto):**
+
+```bash
+# Windows/macOS/Linux
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o setup.js && node setup.js && rm setup.js
+
+# Windows (PowerShell)
+curl -Uri "https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js" -OutFile "setup.js"; node setup.js; Remove-Item setup.js
+```
+
+> 💡 **Recomendamos o quick-setup** para máxima compatibilidade em todos os ambientes.
 
 **Para projetos ES Module (`"type": "module"` no package.json):**
 
