@@ -227,7 +227,7 @@ function detectProjectConfig() {
         envConfig[key.trim()] = valueParts
           .join('=')
           .trim()
-          .replace(/^((["'])|(["'])$)/g, '')
+          .replace(/(^['"]|['"]$)/g, '') // <--- substituído: /(^((["'])|(["'])$)/g, '') => agrupamento explícito
       }
     })
   }
@@ -424,7 +424,7 @@ function updateEnvFile(config) {
     if (Object.prototype.hasOwnProperty.call(exampleEnv, k)) {
       // Manter se já existe com valor; gerar se ausente ou vazio
       const current = existingEnv[k]
-      const shouldGenerate = !current || current.replace(/^"|"$/g, '').trim() === ''
+      const shouldGenerate = !current || current.replace(/(^"|"$)/g, '').trim() === '' // <--- agrupamento explícito
       envVars[k] = shouldGenerate ? generateSecurePassword() : current
     }
   })
@@ -433,7 +433,7 @@ function updateEnvFile(config) {
   // Só preenche se a variável existir no .env.example para evitar poluir o .env
   const decide = (key, value) => {
     const current = existingEnv[key]
-    const isEmpty = !current || current.replace(/^\"|\"$/g, '').trim() === ''
+    const isEmpty = !current || current.replace(/(^"|"$)/g, '').trim() === '' // <--- agrupamento explícito
     return isEmpty ? value : current
   }
 
@@ -496,6 +496,19 @@ function updateEnvFile(config) {
 
 // Função principal
 async function main() {
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    log('⚙️  Setup Cross-Platform - Infra PostgreSQL', 'green')
+    log('', 'reset')
+    log('Flags:', 'blue')
+    log('  --manual   - modo interativo (escolher porta/credenciais)', 'reset')
+    log('  --force    - regera arquivos da infra (pode mudar porta)', 'reset')
+    log('  --auto     - seleciona automaticamente opções padrão', 'reset')
+    log('  --verbose  - logs detalhados', 'reset')
+    log('  --show-secrets - exibe credenciais/URL completas nos logs', 'reset')
+    log('', 'reset')
+    log('Docs: https://github.com/anpdgovbr/docker-infra-pg', 'yellow')
+    process.exit(0)
+  }
   log('🚀 Configurando infraestrutura PostgreSQL com detecção inteligente de porta...\n', 'blue')
 
   try {

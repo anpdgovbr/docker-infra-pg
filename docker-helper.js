@@ -51,16 +51,22 @@ function runCommand(command, options = {}) {
 // Utilidades para compose e pós-up
 function detectRootCompose(cwd) {
   const files = ['docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml']
-  return files.find((f) => fs.existsSync(path.join(cwd, f))) || null
+  return files.find(f => fs.existsSync(path.join(cwd, f))) || null
 }
 
 function detectComposeBin() {
   // Prefira `docker compose` (plugin), senão `docker-compose`
-  const hasDocker = spawnSync(isWindows ? 'where' : 'which', ['docker'], { stdio: 'ignore', shell: false })
+  const hasDocker = spawnSync(isWindows ? 'where' : 'which', ['docker'], {
+    stdio: 'ignore',
+    shell: false
+  })
   if (hasDocker.status === 0) {
     return { bin: 'docker', args: ['compose'] }
   }
-  const hasDockerCompose = spawnSync(isWindows ? 'where' : 'which', ['docker-compose'], { stdio: 'ignore', shell: false })
+  const hasDockerCompose = spawnSync(isWindows ? 'where' : 'which', ['docker-compose'], {
+    stdio: 'ignore',
+    shell: false
+  })
   if (hasDockerCompose.status === 0) {
     return { bin: 'docker-compose', args: [] }
   }
@@ -102,19 +108,31 @@ function runPostUpIfNeeded({ cwd, argv }) {
   const composeFile = detectRootCompose(cwd)
   const customCmd = process.env.INFRA_POST_UP_CMD && process.env.INFRA_POST_UP_CMD.trim()
   if (!composeFile && !customCmd) {
-    log('ℹ️  Nenhum docker-compose na raiz e nenhum INFRA_POST_UP_CMD definido. Pulando pós-up.', 'blue')
+    log(
+      'ℹ️  Nenhum docker-compose na raiz e nenhum INFRA_POST_UP_CMD definido. Pulando pós-up.',
+      'blue'
+    )
     return
   }
 
   const mode = getUpMode(argv)
   if (mode === 'manual') {
-    const ok = promptYesNo(`❓ Detectado ${customCmd ? 'comando customizado' : composeFile}. Executar pós-up agora? [y/N] `)
+    const ok = promptYesNo(
+      `❓ Detectado ${
+        customCmd ? 'comando customizado' : composeFile
+      }. Executar pós-up agora? [y/N] `
+    )
     if (!ok) {
       log('↩️  Pós-up cancelado pelo usuário.', 'yellow')
       return
     }
   } else {
-    log(`⚙️  Modo auto: executando pós-up ${customCmd ? '(customizado)' : `(compose: ${composeFile})`}.`, 'blue')
+    log(
+      `⚙️  Modo auto: executando pós-up ${
+        customCmd ? '(customizado)' : `(compose: ${composeFile})`
+      }.`,
+      'blue'
+    )
   }
 
   try {
@@ -248,27 +266,44 @@ const commands = {
 
 // Função principal
 function main() {
-  const command = process.argv[2]
+  const argv = process.argv.slice(2)
+  const command = argv[0]
 
-  if (!command || !commands[command]) {
+  const printHelp = () => {
     log('🐳 Docker Compose Helper - Cross Platform', 'green')
     log('', 'reset')
     log('Comandos disponíveis:', 'blue')
-    log('  up      - Iniciar infraestrutura', 'reset')
-    log('  down    - Parar infraestrutura', 'reset')
-    log('  logs    - Ver logs do PostgreSQL', 'reset')
-    log('  reset   - Resetar infraestrutura (remove dados)', 'reset')
-    log('  clean   - Remover tudo', 'reset')
-    log('  psql    - Conectar ao PostgreSQL', 'reset')
-    log('  status  - Ver status dos containers', 'reset')
-    log('  backup  - Criar backup do banco', 'reset')
-    log('  restore - Restaurar backup (restore backup.sql)', 'reset')
+    log('  up        - Iniciar infraestrutura', 'reset')
+    log('  down      - Parar infraestrutura', 'reset')
+    log('  logs      - Ver logs do PostgreSQL', 'reset')
+    log('  reset     - Resetar infraestrutura (remove dados)', 'reset')
+    log('  clean     - Remover tudo', 'reset')
+    log('  psql      - Conectar ao PostgreSQL', 'reset')
+    log('  status    - Ver status dos containers', 'reset')
+    log('  backup    - Criar backup do banco', 'reset')
+    log('  restore   - Restaurar backup (restore backup.sql)', 'reset')
     log('', 'reset')
-    log('Uso: node docker-helper.js <comando>', 'yellow')
+    log('Pós-up (opcional):', 'blue')
+    log('  INFRA_POST_UP_DISABLE=1    # desabilita hook', 'reset')
+    log('  INFRA_UP_MODE=manual       # pergunta antes de executar', 'reset')
+    log('  INFRA_POST_UP_CMD="..."     # comando customizado', 'reset')
+    log('  Flag: --manual             # alternativo ao INFRA_UP_MODE=manual', 'reset')
+    log('', 'reset')
+    log('Docs: https://github.com/anpdgovbr/docker-infra-pg', 'yellow')
+    log('Uso: node docker-helper.js <comando> [--manual]', 'yellow')
+  }
+
+  if (!command || command === 'help' || argv.includes('--help') || argv.includes('-h')) {
+    printHelp()
+    process.exit(command ? 0 : 1)
+  }
+
+  if (!commands[command]) {
+    log(`❌ Comando desconhecido: ${command}`, 'red')
+    printHelp()
     process.exit(1)
   }
 
-  // Executa o comando
   try {
     commands[command]()
   } catch (error) {

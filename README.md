@@ -1,216 +1,166 @@
 [![License](https://img.shields.io/github/license/anpdgovbr/docker-infra-pg)](https://github.com/anpdgovbr/docker-infra-pg/blob/main/LICENSE)
-[![Repo size](https://img.shields.io/github/repo-size/anpdgovbr/docker-infra-pg)](https://github.com/anpdgovbr/docker-infra-pg)
-[![Node >=14](https://img.shields.io/badge/node-%3E%3D14-brightgreen)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-%20-blue?logo=docker)](https://www.docker.com/)
 [![PostgreSQL](https://img.shields.io/badge/postgresql-%3E%3D13-blue?logo=postgresql)](https://www.postgresql.org/)
-
----
+[![Node >=14](https://img.shields.io/badge/node-%3E%3D14-brightgreen)](https://nodejs.org/)
 
 # 🐘 Docker PostgreSQL Infrastructure ANPD
 
-> **Infraestrutura PostgreSQL padronizada para projetos da ANPD com setup automatizado e detecção inteligente de porta.**
+> **Infraestrutura PostgreSQL padronizada para projetos da ANPD com setup automatizado, detecção inteligente de porta e isolamento completo por projeto.**
 
-> RBAC (opcional): esta infraestrutura funciona de forma independente do RBAC. Se desejar usar em conjunto com um projeto que possua RBAC, há um guia específico em `docs/rbac-dev-setup.md`, mas não é obrigatório.
+## ✨ Principais Recursos
 
-## 🌟 **NOVO v0.2.0: Detecção Inteligente de Porta!**
+- 🚀 **Setup em 1 comando**: Configuração automática completa
+- 🔌 **Detecção inteligente de portas**: Múltiplos projetos na mesma VM sem conflitos
+- 🌍 **100% cross-platform**: Windows, macOS e Linux
+- 🔒 **Isolamento total**: Containers, redes e volumes únicos por projeto
+- ⚡ **Zero configuração manual**: Funciona automaticamente em qualquer projeto ANPD
 
-Agora você pode ter **múltiplos projetos na mesma VM** sem conflitos! O sistema automaticamente:
+## 🚀 Quick Start
 
-- ✅ **Detecta portas em uso** por outros projetos PostgreSQL
-- ✅ **Encontra porta disponível** automaticamente (5432, 5433, 5434...)
-- ✅ **Salva configuração** para próximas execuções
-- ✅ **Isola completamente** containers, redes e volumes por projeto
+### Para novos projetos
 
 ```bash
-# Exemplo: 3 projetos na mesma VM
-Projeto A (backlog-dim):      localhost:5432  ✅
-Projeto B (controladores):    localhost:5433  ✅ (detectado automaticamente)
-Projeto C (transparencia):    localhost:5434  ✅ (detectado automaticamente)
+# Um comando para configurar tudo
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+
+# Configurar infraestrutura
+npm run infra:setup
+
+# Iniciar desenvolvimento
+npm run dev
 ```
 
-## 🌍 **Cross-Platform Completo**
+### Para projetos existentes
 
-Funciona perfeitamente em **Windows, macOS e Linux** usando Node.js:
+```bash
+# Setup automático (preserva configurações existentes)
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+
+# Configurar (preserva dados do .env existente)
+npm run infra:setup
+
+# Desenvolvimento normal
+npm run dev  # Agora inclui o banco automaticamente
+```
+
+## � Múltiplos Projetos, Zero Conflitos
+
+**Exemplo prático: 3 projetos na mesma VM**
+
+```bash
+Projeto A (backlog-dim):     localhost:5432  ✅
+Projeto B (controladores):   localhost:5433  ✅ (auto-detectado)
+Projeto C (transparencia):   localhost:5434  ✅ (auto-detectado)
+```
+
+✅ **Isolamento completo**: Cada projeto tem containers, redes e volumes únicos  
+✅ **Detecção automática**: Sistema encontra a próxima porta disponível  
+✅ **Configuração persistente**: Lembra da porta escolhida para sempre
+
+## 📋 Comandos Essenciais
+
+### Setup e configuração
+
+```bash
+npm run infra:setup         # Setup automático com detecção de porta
+npm run infra:setup:manual  # Controle total sobre configurações
+npm run infra:setup:force   # Regenerar tudo do zero
+```
+
+### Uso diário
+
+```bash
+npm run infra:up            # Subir infraestrutura + pós-up opcional
+npm run infra:down          # Parar infraestrutura
+npm run infra:logs          # Ver logs do PostgreSQL
+npm run infra:status        # Status dos containers
+```
+
+### Desenvolvimento
+
+```bash
+npm run dev                 # Inicia desenvolvimento (inclui banco)
+npm run infra:db:init       # Setup completo do banco
+npm run infra:db:fresh      # Reset + migrations + seed
+```
+
+### Utilitários
+
+```bash
+npm run infra:psql          # Conectar ao PostgreSQL
+npm run infra:fix           # Corrigir problemas automaticamente
+npm run infra:update        # Atualizar scripts
+```
+
+> 💡 **Dica**: Os scripts usam prefixo `infra:*` para não interferir com comandos existentes do Prisma, Next.js, etc.
+
+## 🌍 Multi-Stack e Cross-Platform
+
+### Compatibilidade automática com frameworks
+
+- **Next.js + Prisma**: Integração nativa
+- **NestJS + TypeORM**: Variáveis detectadas automaticamente
+- **Spring Boot**: Datasource configurado automaticamente
+- **Keycloak**: Senhas seguras geradas automaticamente
+
+### Suporte completo a plataformas
 
 - ✅ **Windows** (PowerShell, CMD, Git Bash)
-- ✅ **macOS** (Terminal, iTerm)
+- ✅ **macOS** (Terminal, iTerm2)
 - ✅ **Linux** (bash, zsh, fish)
-- ✅ **CI/CD** (GitHub Actions, GitLab, Jenkins)
+- ✅ **CI/CD** (GitHub Actions, GitLab CI, Jenkins)
 
-## 🚀 Setup Rápido (1 Comando)
+## 📚 Documentação Detalhada
 
-### **🤖 Auto-Setup (Mais Fácil)**
+### 🟢 Iniciante
 
-Um comando que configura tudo automaticamente:
+- [`docs/inicio-rapido.md`](docs/inicio-rapido.md) - Primeiros passos detalhados
+- [`docs/instalacao-projetos.md`](docs/instalacao-projetos.md) - Como usar em projetos existentes
 
-```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
-```
+### 🟡 Intermediário
 
-**Para projetos ES Module (`"type": "module"`):**
+- [`docs/comandos.md`](docs/comandos.md) - Referência completa de comandos
+- [`docs/gerenciamento-portas.md`](docs/gerenciamento-portas.md) - Como funciona a detecção de portas
+- [`docs/compatibilidade.md`](docs/compatibilidade.md) - Detalhes sobre cross-platform
 
-```bash
-# Windows (PowerShell/CMD)
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
+### 🔴 Avançado
 
-# macOS/Linux
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && rm temp-setup.cjs
-```
+- [`docs/guia-completo.md`](docs/guia-completo.md) - Guia técnico completo
+- [`docs/ci-cd.md`](docs/ci-cd.md) - Integração com pipelines
+- [`docs/solucao-problemas.md`](docs/solucao-problemas.md) - Troubleshooting avançado
 
-### **⚡ Universal Auto-Detect**
+## ⚡ Recursos Avançados
 
-```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
-```
+### Pós-up Hook Automático
 
-**✅ Sem Conflitos**: Scripts usam prefixo `infra:*` - não interferem com scripts existentes do Prisma, Next.js, etc.
+- **Auto**: Se houver `docker-compose.yml` na raiz, executa automaticamente após subir a infra
+- **Manual**: Use `--manual` para controle total
+- **Customizado**: Defina `INFRA_POST_UP_CMD` para comandos específicos
 
-### Resultado esperado
+### Segurança Integrada
 
-Ao executar o Auto-Setup você terá:
+- **Senhas criptográficas**: Geradas automaticamente com `crypto.randomBytes()`
+- **Mascaramento de logs**: Credenciais nunca aparecem em terminais/CI
+- **Isolamento total**: Cada projeto tem containers, redes e volumes únicos
 
-- Pasta `.infra/` criada com os helpers (`setup-cross-platform.js`, `docker-helper.js`, `db-helper.js`, etc.).
-- Pasta `infra-db/` com `docker-compose.yml` e `.env` da infraestrutura (ignoradas pelo Git).
-- `package.json` atualizado com scripts `infra:*` (se você permitir a atualização automática).
-- `.gitignore` atualizado para ignorar `.infra/` e `infra-db/`.
-
-Exemplo de uso e saída típica:
+### Correções Automáticas
 
 ```bash
-# Na raiz do projeto
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
-
-🚀 Configurando Infraestrutura PostgreSQL ANPD
-📦 Projeto Node.js detectado
-✅ Projeto: meu-projeto-anpd
-✅ 20 scripts adicionados ao package.json
-✅ .gitignore configurado
-✅ Pasta .infra criada
-
-🎉 Configuração concluída!
-
-Próximos passos:
-	1. npm run infra:setup     # Configurar infraestrutura
-	2. npm run dev             # Iniciar desenvolvimento
+npm run infra:fix           # Corrige credenciais automaticamente
+npm run infra:update        # Atualiza scripts para versão mais recente
 ```
+
+## 📞 Suporte e Contribuição
+
+- 🐛 **Issues**: [GitHub Issues](https://github.com/anpdgovbr/docker-infra-pg/issues)
+- � **Discussões**: [GitHub Discussions](https://github.com/anpdgovbr/docker-infra-pg/discussions)
+- 📖 **Wiki**: [`docs/`](docs/) - Documentação completa
 
 ---
 
-## 🔌 Compatibilidade Multi‑Stack (Opcional, via .env.example)
+**Uma infraestrutura. Todos os projetos ANPD. Zero configuração manual.** 🎉
 
-Os scripts agora detectam e preenchem variáveis comuns de banco para stacks populares — somente se essas variáveis existirem no seu `.env.example`. Mantêm valores já existentes no `.env` e preenchem apenas os que estiverem vazios/ausentes.
-
-- Keycloak: `KEYCLOAK_ADMIN_PASSWORD`, `KEYCLOAK_DB_PASSWORD` (senhas seguras geradas)
-- Genéricas: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_USERNAME`, `DB_PASSWORD`
-- psql: `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`
-- NestJS/TypeORM: `TYPEORM_HOST`, `TYPEORM_PORT`, `TYPEORM_USERNAME`, `TYPEORM_PASSWORD`, `TYPEORM_DATABASE`
-- Spring Boot: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
-- Quarkus: `QUARKUS_DATASOURCE_DB_KIND`, `QUARKUS_DATASOURCE_JDBC_URL`, `QUARKUS_DATASOURCE_USERNAME`, `QUARKUS_DATASOURCE_PASSWORD`
-
-Notas:
-- Se seu projeto não usa Keycloak ou não declara essas variáveis, nada é alterado.
-- A `DATABASE_URL` e `POSTGRES_*` continuam sendo atualizadas como parte do setup da infra local.
-- Para exemplos por stack, veja `docs/REPLICAR-EM-PROJETOS.md`.
-
----
-
-## Índice rápido e detalhado
-
-Use o README para um resumo rápido e os arquivos em `docs/` para detalhes passo-a-passo:
-
-- `docs/guia-completo.md` — Guia completo com exemplos e passo a passo
-- `docs/comandos.md` — Templates de scripts `package.json` e casos de uso
-- `docs/port-management.md` — Como a detecção de portas funciona
-- `docs/cross-platform.md` — Notas sobre compatibilidade e uso em cada SO
-- `docs/ci-cd.md` — Exemplos e boas práticas para pipelines
-- `docs/troubleshooting.md` — Problemas comuns e soluções rápidas
-- `docs/REPLICAR-EM-PROJETOS.md` — Instruções para replicar em múltiplos projetos
-  
-RBAC (opcional):
-- `docs/rbac-dev-setup.md` — Guia de ambiente para projetos que usam RBAC
-- `docs/rbac-roadmap.md` — Itens específicos de integração com RBAC
-
----
-
-## Requisitos
-
-- Docker e Docker Compose
-- Node.js (para os helpers em `.infra/`)
-- npm ou yarn
-
-Seu projeto deve conter `package.json` na raiz. Um `.env` é recomendado (pode estar vazio inicialmente).
-
----
-
-## Começando (resumo)
-
-1. Instalar dependências do sistema (Docker + Node).
-2. Executar o setup (modo recomendado automático):
-
-```bash
-# Forma rápida (baixa e executa o helper):
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
-
-# Alternativa cross-platform (script detecta SO automaticamente):
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-setup.js | node
-```
-
-3. Na raiz do projeto, os scripts npm úteis (adicionados automaticamente) ficam disponíveis como `infra:*`.
-
-### Comandos essenciais (resumo):
-
-```bash
-npm run infra:setup         # Setup inicial (detecta porta automaticamente)
-npm run infra:setup:manual  # Modo manual para escolher porta/credenciais
-npm run infra:setup:force   # Forçar regeneração (nova porta se necessário)
-npm run infra:up            # Subir infraestrutura (docker-compose up) + pós-up opcional
-npm run infra:down          # Parar infraestrutura
-npm run infra:status        # Ver status
-npm run infra:logs          # Ver logs
-npm run infra:fix           # Corrigir credenciais automaticamente
-npm run infra:update        # Atualizar scripts na pasta .infra/
-```
-
-Para atualizar os scripts baixando do repositório (sem alterar package.json):
-
-```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart-update.js | node
-```
-
----
-
-## Pós-up Hook Opcional (Genérico)
-
-Após `infra:up`, os helpers podem disparar automaticamente um comando pós-subida, ideal para subir serviços que dependem do banco (por exemplo, Keycloak), mantendo o comportamento opcional e seguro.
-
-- Auto: se houver `docker-compose.yml` na raiz do projeto, executa `docker compose up -d` após a infra subir.
-- Manual: pergunta antes de executar (útil em ambientes interativos).
-- Customizado: defina um comando alternativo via variável de ambiente.
-
-Variáveis de ambiente e flags:
-
-- `INFRA_POST_UP_DISABLE=1` — desabilita completamente o hook pós-up.
-- `INFRA_UP_MODE=manual` — ativa modo interativo (pergunta antes de executar).
-- `INFRA_UP_MODE=auto` — ativa modo automático (padrão).
-- `INFRA_POST_UP_CMD="docker compose -f compose.override.yml up -d"` — comando pós-up customizado.
-- Flag `--manual` — equivalente a `INFRA_UP_MODE=manual` (ex.: `node .infra/docker-helper.js up --manual`).
-
-Exemplos:
-
-```bash
-# Padrão (auto): sobe infra e, se tiver compose na raiz, sobe serviços
-npm run infra:up
-
-# Manual: pergunta antes de rodar o compose da raiz
-INFRA_UP_MODE=manual npm run infra:up
-
-# Desabilitar completamente o pós-up
-INFRA_POST_UP_DISABLE=1 npm run infra:up
-
-# Comando pós-up customizado
-INFRA_POST_UP_CMD="docker compose -f compose.override.yml up -d" npm run infra:up
-```
-
+_v0.2.1 - Documentação modernizada e consolidada_
 
 ## Segurança — mascaramento de secrets
 
@@ -250,6 +200,14 @@ Isso permite rodar os helpers em projetos com `type: "module"` ou CommonJS sem a
 - `fix-credentials` — regenera `docker-compose.yml` e `.env` da infra com credenciais corretas.
 
 Exemplos:
+
+---
+
+## Sobre scripts de inicialização (init)
+
+- Os projetos consumidores geram dinamicamente `infra-db/init/01-create-app-database.sh` durante o `infra:setup`.
+- Este repositório não mantém scripts `init/` versionados para evitar acoplamento e credenciais fixas.
+- O bind `./init:/docker-entrypoint-initdb.d` permanece; se a pasta estiver vazia, o PostgreSQL apenas ignora.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick-fix-volumes.js | node

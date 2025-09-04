@@ -196,6 +196,15 @@ async function downloadAllScripts(scripts, infraDir, extension) {
 
 // Função principal
 async function main() {
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    log('🔄 Update Scripts - Atualiza helpers da infraestrutura', 'green')
+    log('', 'reset')
+    log('Uso:', 'blue')
+    log('  node .infra/update-scripts.js [--help]', 'reset')
+    log('', 'reset')
+    log('Docs: https://github.com/anpdgovbr/docker-infra-pg', 'yellow')
+    process.exit(0)
+  }
   try {
     log('🔄 Atualizando scripts da infraestrutura...', 'blue')
 

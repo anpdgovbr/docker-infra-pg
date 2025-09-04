@@ -1,360 +1,410 @@
-# 📦 Templates de Scripts para package.json (Cross-Platform)
+# � Referência de Comandos
 
-Este arquivo contém templates **verdadeiramente cross-platform** que funcionam perfeitamente em Windows, macOS e Linux.
+> **Objetivo**: Guia completo de todos os comandos disponíveis, organizados por função e com exemplos práticos.
 
-## 🌍 **NOVIDADE: Scripts Cross-Platform**
+## 🚀 Quick Reference
 
-Agora todos os scripts funcionam em **qualquer OS que rode Node.js!** 🎉
-
-> **⚠️ IMPORTANTE para projetos ES Modules:**  
-> Se seu projeto usa `"type": "module"` no package.json, o comando `curl | node` não funciona. Use arquivo temporário:
->
-> ```bash
-> curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
-> ```
->
-> Para projetos CommonJS (sem `"type": "module"`):
->
-> ```bash
-> curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
-> ```
-
-> Dica: muitos helpers aceitam `--show-secrets` para revelar URLs completas durante diagnóstico e `--verbose` (ou env VERBOSE=1) para mostrar stacks completos.
-
-## 🚨 **Problemas Comuns e Soluções**
-
-### **Problema: PowerShell cria pasta `-p`**
-
-❌ **Comando antigo** (criava pasta `-p`):
+### Comandos Essenciais (Uso Diário)
 
 ```bash
-mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul
+npm run infra:up            # Subir PostgreSQL
+npm run infra:down          # Parar PostgreSQL
+npm run infra:logs          # Ver logs
+npm run dev                 # Desenvolvimento (inclui banco)
 ```
 
-✅ **Solução**: Usar apenas `curl` direto (pasta `.infra` criada automaticamente):
+### Setup e Configuração
 
 ```bash
-curl -sSL https://url -o .infra/arquivo.js
+npm run infra:setup         # Setup automático
+npm run infra:setup:manual  # Setup manual (escolher configurações)
+npm run infra:setup:force   # Reconfigurar do zero
 ```
 
-### **Problema: ES Modules (`"type": "module"`)**
-
-❌ **Erro comum**:
-
-```
-Error [ERR_REQUIRE_ESM]: require() of ES modules is not supported
-```
-
-✅ **Solução**: Auto-setup detecta e usa extensão `.cjs`:
+### Banco de Dados
 
 ```bash
-# Para projetos ES Module, use arquivo temporário:
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs && node temp-setup.cjs && del temp-setup.cjs
-
-# Para projetos CommonJS (sem "type": "module"):
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+npm run infra:db:init       # Setup completo (up + migrate + seed)
+npm run infra:db:fresh      # Reset + migrate + seed
+npm run infra:psql          # Conectar ao PostgreSQL
 ```
 
-### **Setup Inicial (Primeira vez)**
+## 📦 Comandos por Categoria
+
+### 🔧 Setup e Configuração
+
+| Comando              | Descrição                              | Uso                                            |
+| -------------------- | -------------------------------------- | ---------------------------------------------- |
+| `infra:setup`        | Setup automático com detecção de porta | Primeira vez ou depois de mudanças             |
+| `infra:setup:manual` | Setup manual com controle total        | Quando quiser escolher cada configuração       |
+| `infra:setup:force`  | Força regeneração completa             | Para resolver problemas ou mudar configurações |
+
+**Exemplos:**
 
 ```bash
-npm run infra:setup      # Baixa helpers + configura infraestrutura
-npm run dev              # Inicia desenvolvimento (inclui infra:db:init)
+# Setup padrão (recomendado)
+npm run infra:setup
+
+# Escolher porta específica e credenciais
+npm run infra:setup:manual
+
+# Resolver problemas ou mudar de porta
+npm run infra:setup:force
 ```
 
-### **Desenvolvimento Diário**
+### 🐳 Gerenciamento de Containers
+
+| Comando         | Descrição                          | Uso                                 |
+| --------------- | ---------------------------------- | ----------------------------------- |
+| `infra:up`      | Subir PostgreSQL + pós-up opcional | Início de sessão de desenvolvimento |
+| `infra:down`    | Parar PostgreSQL                   | Fim de sessão                       |
+| `infra:status`  | Ver status dos containers          | Verificar se está rodando           |
+| `infra:logs`    | Ver logs do PostgreSQL             | Debug de problemas                  |
+| `infra:restart` | Restart completo                   | Resolver problemas de conexão       |
+
+**Exemplos:**
 
 ```bash
-npm run infra:up         # Só subir banco (se já configurado) + pós-up opcional
-npm run dev              # Desenvolvimento (já inclui banco)
+# Subir banco (com pós-up automático se configurado)
+npm run infra:up
+
+# Subir banco em modo manual (pergunta antes do pós-up)
+npm run infra:up:manual
+
+# Ver se está rodando
+npm run infra:status
+
+# Debug de problemas
+npm run infra:logs
 ```
 
-### **Reset Completo**
+### 🗄️ Banco de Dados
 
-````bash
-npm run infra:db:fresh   # Reset banco + migrations + seed
-npm run dev              # Desenvolvimento
-```do Node.js! 🎉
+| Comando            | Descrição                            | Uso                                         |
+| ------------------ | ------------------------------------ | ------------------------------------------- |
+| `infra:db:init`    | Setup completo: up + migrate + seed  | Primeira vez ou depois de changes no schema |
+| `infra:db:fresh`   | Reset + migrate + seed (PERDE DADOS) | Limpar banco e recriar                      |
+| `infra:db:migrate` | Apenas migrações                     | Aplicar mudanças no schema                  |
+| `infra:db:seed`    | Apenas seed                          | Popular com dados iniciais                  |
+| `infra:psql`       | Conectar ao PostgreSQL               | Comandos SQL diretos                        |
 
-## **🎯 Templates Recomendados por Cenário**
+**Exemplos:**
 
-### **1. Projeto Basic (Mínimo essencial)**
+```bash
+# Setup completo para desenvolvimento
+npm run infra:db:init
+
+# Limpar tudo e recriar (cuidado!)
+npm run infra:db:fresh
+
+# Só aplicar migrações
+npm run infra:db:migrate
+
+# Conectar diretamente ao banco
+npm run infra:psql
+```
+
+### 🛠️ Manutenção e Utilitários
+
+| Comando         | Descrição                             | Uso                           |
+| --------------- | ------------------------------------- | ----------------------------- |
+| `infra:fix`     | Corrigir problemas automaticamente    | Quando algo não funciona      |
+| `infra:update`  | Atualizar scripts                     | Pegar versão mais recente     |
+| `infra:clean`   | Remover tudo (infra-db/)              | Limpeza completa              |
+| `infra:reset`   | Reset com preservação de configuração | Limpar dados mas manter setup |
+| `infra:backup`  | Criar backup do banco                 | Antes de mudanças importantes |
+| `infra:restore` | Restaurar backup                      | Depois de problemas           |
+
+**Exemplos:**
+
+```bash
+# Resolver problemas automaticamente
+npm run infra:fix
+
+# Atualizar para versão mais recente
+npm run infra:update
+
+# Limpeza total (remove pasta infra-db)
+npm run infra:clean
+
+# Reset mantendo configuração
+npm run infra:reset
+```
+
+## 🎮 Fluxos de Trabalho Comuns
+
+### Primeira vez no projeto
+
+```bash
+# 1. Setup automático (só uma vez)
+npm run infra:setup
+
+# 2. Desenvolvimento
+npm run dev  # Inclui setup do banco automaticamente
+```
+
+### Desenvolvimento diário
+
+```bash
+# Opção 1: Manual
+npm run infra:up && npm run dev
+
+# Opção 2: Automático (se configurou no script dev)
+npm run dev  # Banco sobe automaticamente
+```
+
+### Depois de pull/mudanças no schema
+
+```bash
+npm run infra:db:init  # Aplica migrações + seed
+npm run dev
+```
+
+### Resolver problemas
+
+```bash
+npm run infra:fix      # Corrige automaticamente
+npm run infra:logs     # Debug se necessário
+```
+
+### Reset completo (última opção)
+
+```bash
+npm run infra:clean    # Remove tudo
+npm run infra:setup    # Reconfigura
+npm run dev
+```
+
+## 🚀 Integração com Frameworks
+
+### Next.js + Prisma
 
 ```json
 {
   "scripts": {
-    "infra:setup": "curl -fsSL https://raw.githubusercontent.com/seu-usuario/docker-infra-pg/main/setup-cross-platform.js | node",
-    "infra:up": "node .infra/docker-helper.js up",
-    "infra:up:manual": "node .infra/docker-helper.js up --manual",
-    "infra:down": "node .infra/docker-helper.js down",
-    "infra:logs": "node .infra/docker-helper.js logs",
-    "infra:reset": "node .infra/docker-helper.js reset",
-    "dev": "npm run infra:up && npm run start:dev",
-    "start:dev": "nodemon src/index.js"
+    "dev": "npm run infra:db:init && next dev",
+    "build": "npx prisma generate && next build",
+    "start": "next start"
   }
 }
-````
-
-**💡 Ainda mais fácil:** Use o auto-setup
-
-```bash
-curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
 ```
 
-## 🚀 Scripts Completos (Recomendado) - Cross-Platform
-
-Para desenvolvimento profissional com todas as funcionalidades:
+### NestJS + TypeORM
 
 ```json
 {
   "scripts": {
-    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.js && node .infra/setup-cross-platform.js",
-    "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
-    "infra:setup:force": "node .infra/setup-cross-platform.js --force --auto",
+    "start:dev": "npm run infra:db:init && nest start --watch",
+    "start:debug": "npm run infra:up && nest start --debug --watch"
+  }
+}
+```
+
+### Express + Prisma
+
+```json
+{
+  "scripts": {
+    "dev": "npm run infra:up && nodemon src/server.js",
+    "test": "npm run infra:db:init && jest"
+  }
+}
+```
+
+## 🔧 Flags e Opções Avançadas
+
+### Flags Globais
+
+- `--show-secrets`: Mostrar senhas e URLs completas (para debug)
+- `--verbose`: Mostrar logs detalhados e stack traces
+- `--manual`: Modo manual (pergunta antes de executar)
+
+**Exemplos:**
+
+```bash
+# Ver URL completa durante debug
+npm run infra:setup -- --show-secrets
+
+# Logs detalhados para troubleshooting
+npm run infra:up -- --verbose
+
+# Modo manual para pós-up
+npm run infra:up -- --manual
+```
+
+### Variáveis de Ambiente
+
+| Variável                | Descrição                  | Valores          | Exemplo                                                  |
+| ----------------------- | -------------------------- | ---------------- | -------------------------------------------------------- |
+| `INFRA_POST_UP_DISABLE` | Desabilita pós-up hook     | `1`              | `INFRA_POST_UP_DISABLE=1 npm run infra:up`               |
+| `INFRA_UP_MODE`         | Modo do pós-up             | `auto`, `manual` | `INFRA_UP_MODE=manual npm run infra:up`                  |
+| `INFRA_POST_UP_CMD`     | Comando pós-up customizado | comando shell    | `INFRA_POST_UP_CMD="docker compose -f custom.yml up -d"` |
+| `SHOW_SECRETS`          | Mostrar credenciais        | `1`              | `SHOW_SECRETS=1 npm run infra:setup`                     |
+| `VERBOSE`               | Logs detalhados            | `1`              | `VERBOSE=1 npm run infra:debug`                          |
+
+**Exemplos:**
+
+```bash
+# Desabilitar pós-up completamente
+INFRA_POST_UP_DISABLE=1 npm run infra:up
+
+# Pós-up manual (pergunta antes)
+INFRA_UP_MODE=manual npm run infra:up
+
+# Comando pós-up customizado
+INFRA_POST_UP_CMD="docker compose -f keycloak.yml up -d" npm run infra:up
+
+# Debug com credenciais visíveis
+SHOW_SECRETS=1 VERBOSE=1 npm run infra:debug
+```
+
+## 🌍 Compatibilidade Cross-Platform
+
+### Windows
+
+```bash
+# PowerShell
+npm run infra:setup
+
+# CMD
+npm run infra:setup
+
+# Git Bash
+npm run infra:setup
+```
+
+### macOS/Linux
+
+```bash
+# Qualquer terminal
+npm run infra:setup
+```
+
+### Projetos ES Modules
+
+```bash
+# Auto-setup para ES Modules (type: "module")
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js -o temp-setup.cjs
+node temp-setup.cjs
+rm temp-setup.cjs
+```
+
+## 🔍 Debugging e Diagnóstico
+
+### Comandos de diagnóstico
+
+```bash
+npm run infra:debug      # Diagnóstico completo
+npm run infra:status     # Status dos containers
+npm run infra:logs       # Logs do PostgreSQL
+```
+
+### Verificação manual
+
+```bash
+# Ver containers rodando
+docker ps --filter "name=postgres"
+
+# Ver portas em uso
+netstat -an | grep 5432  # Linux/macOS
+netstat -an | findstr 5432  # Windows
+
+# Testar conexão
+npm run infra:psql
+```
+
+### Logs detalhados
+
+```bash
+# Com timestamps
+docker logs $(docker ps -q --filter "name=postgres") -t
+
+# Seguir logs em tempo real
+npm run infra:logs
+```
+
+## 📊 Templates de package.json por Cenário
+
+### Básico (Essencial)
+
+```json
+{
+  "scripts": {
+    "infra:setup": "node .infra/setup-cross-platform.js",
     "infra:up": "node .infra/docker-helper.js up",
     "infra:down": "node .infra/docker-helper.js down",
-    "infra:logs": "node .infra/docker-helper.js logs",
-    "infra:reset": "node .infra/docker-helper.js reset",
-    "infra:clean": "node .infra/docker-helper.js clean",
-    "infra:psql": "node .infra/docker-helper.js psql",
-    "infra:status": "node .infra/docker-helper.js status",
-    "infra:backup": "node .infra/docker-helper.js backup",
     "infra:db:init": "node .infra/db-helper.js setup",
-    "infra:db:fresh": "node .infra/db-helper.js fresh",
-    "infra:db:migrate": "node .infra/db-helper.js migrate",
-    "infra:db:seed": "node .infra/db-helper.js seed",
-    "infra:db:studio": "node .infra/db-helper.js studio",
-    "infra:db:reset": "node .infra/db-helper.js reset",
     "dev": "npm run infra:db:init && next dev"
   }
 }
 ```
 
-#### Pós-up opcional (genérico)
-
-- Auto: se houver `docker-compose.yml` na raiz, executa `docker compose up -d` após a infra subir.
-- Manual: use `infra:up:manual` ou `INFRA_UP_MODE=manual npm run infra:up`.
-- Customize com `INFRA_POST_UP_CMD` ou desabilite com `INFRA_POST_UP_DISABLE=1`.
-
-## 🏢 Scripts para CI/CD e Produção - Cross-Platform
-
-Para ambientes automatizados e produção:
+### Completo (Recomendado)
 
 ```json
 {
   "scripts": {
-    "infra:setup": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js -o .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js -o .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js -o .infra/db-helper.js && node .infra/setup-cross-platform.js",
-    "infra:setup:ci": "node .infra/setup-cross-platform.js --force --auto",
-    "infra:setup:test": "node .infra/setup-cross-platform.js --force --db-name=test_db --auto",
-    "infra:setup:prod": "node .infra/setup-cross-platform.js --force --db-name=prod_db --db-user=prod_user --db-password=${PROD_DB_PASSWORD}",
-    "infra:up": "node .infra/docker-helper.js up",
-    "infra:down": "node .infra/docker-helper.js down",
-    "infra:logs": "node .infra/docker-helper.js logs",
-    "infra:reset": "node .infra/docker-helper.js reset",
-    "infra:backup": "node .infra/docker-helper.js backup",
-    "infra:restore": "node .infra/docker-helper.js restore",
-    "infra:db:init": "node .infra/db-helper.js setup",
-    "infra:db:fresh": "node .infra/db-helper.js fresh",
-    "infra:db:migrate": "node .infra/db-helper.js migrate",
-    "infra:db:seed": "node .infra/db-helper.js seed",
-    "test:integration": "npm run infra:setup:test && npm run test",
-    "build:prod": "npm run infra:setup:prod && npm run build"
-  }
-}
-```
-
-## 📱 Next.js + Prisma (Template ANPD Padrão) - Cross-Platform
-
-Para projetos Next.js com Prisma (mais comum na ANPD):
-
-```json
-{
-  "name": "@anpdgovbr/meu-projeto",
-  "scripts": {
-    "dev": "npm run infra:db:init && next dev",
-    "build": "next build",
-    "start": "next start",
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
+    "infra:setup": "node .infra/setup-cross-platform.js",
     "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
+    "infra:setup:force": "node .infra/setup-cross-platform.js --force",
     "infra:up": "node .infra/docker-helper.js up",
+    "infra:up:manual": "node .infra/docker-helper.js up --manual",
     "infra:down": "node .infra/docker-helper.js down",
     "infra:logs": "node .infra/docker-helper.js logs",
-    "infra:reset": "node .infra/docker-helper.js reset",
-    "infra:clean": "node .infra/docker-helper.js clean",
-    "infra:db:init": "node .infra/db-helper.js setup",
-    "infra:db:fresh": "node .infra/db-helper.js fresh",
-    "infra:db:migrate": "node .infra/db-helper.js migrate",
-    "infra:db:seed": "node .infra/db-helper.js seed",
-    "infra:db:studio": "node .infra/db-helper.js studio",
-    "infra:db:reset": "node .infra/db-helper.js reset",
-    "prisma:migrate": "npx prisma migrate dev",
-    "prisma:seed": "npx prisma db seed",
-    "prisma:studio": "npx prisma studio",
-    "prisma:reset": "npx prisma migrate reset --force"
-  }
-}
-```
-
-## 🔧 Node.js/Express + Prisma - Cross-Platform
-
-Para APIs e backends:
-
-```json
-{
-  "name": "@anpdgovbr/minha-api",
-  "scripts": {
-    "dev": "npm run infra:db:init && nodemon src/server.js",
-    "start": "node src/server.js",
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
-    "infra:up": "node .infra/docker-helper.js up",
-    "infra:down": "node .infra/docker-helper.js down",
-    "infra:logs": "node .infra/docker-helper.js logs",
-    "infra:reset": "node .infra/docker-helper.js reset",
-    "infra:db:init": "node .infra/db-helper.js setup",
-    "infra:db:fresh": "node .infra/db-helper.js fresh",
-    "infra:db:migrate": "node .infra/db-helper.js migrate",
-    "infra:db:seed": "node .infra/db-helper.js seed",
-    "infra:db:studio": "node .infra/db-helper.js studio",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:integration": "npm run infra:setup:test && npm run test"
-  }
-}
-```
-
-## 🐳 Docker + GitHub Actions (CI/CD) - Cross-Platform
-
-Para projetos com pipeline automatizado:
-
-```json
-{
-  "scripts": {
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
-    "infra:setup:ci": "node .infra/setup-cross-platform.js --force --auto",
-    "infra:up": "node .infra/docker-helper.js up",
-    "infra:down": "node .infra/docker-helper.js down",
-    "infra:db:init": "node .infra/db-helper.js setup",
-    "infra:db:init:ci": "npm run infra:setup:ci && npm run infra:db:init",
-    "test": "jest",
-    "test:ci": "npm run infra:db:init:ci && npm run test",
-    "build": "next build",
-    "build:ci": "npm run infra:db:init:ci && npm run build",
-    "deploy": "npm run build && npm run deploy:vercel"
-  }
-}
-```
-
-## �️ **Template para Projetos ANPD Existentes**
-
-Para projetos como `@anpdgovbr/backlog-dim` que já têm scripts estabelecidos:
-
-```json
-{
-  "scripts": {
-    "build": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=1 npx prisma generate && next build",
-    "dev": "npm run build-routes && npm run infra:db:init && next dev --turbopack",
-    "start": "next start",
-
-    "prisma:migrate": "npx prisma migrate dev --name init",
-    "prisma:push": "npx prisma db push",
-    "prisma:reset": "npx prisma migrate reset --force",
-    "prisma:seed": "npx prisma db seed",
-    "prisma:studio": "npx prisma studio",
-
-    "db:reset": "npx prisma migrate reset --force",
-    "db:seed": "npx tsx prisma/seed.ts",
-
-    "infra:setup": "mkdir -p .infra 2>/dev/null || mkdir .infra 2>nul && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/setup-cross-platform.js > .infra/setup-cross-platform.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/docker-helper.js > .infra/docker-helper.js && curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/db-helper.js > .infra/db-helper.js && node .infra/setup-cross-platform.js",
-    "infra:setup:manual": "node .infra/setup-cross-platform.js --manual",
-    "infra:setup:force": "node .infra/setup-cross-platform.js --force --auto",
-    "infra:up": "node .infra/docker-helper.js up",
-    "infra:down": "node .infra/docker-helper.js down",
-    "infra:logs": "node .infra/docker-helper.js logs",
-    "infra:reset": "node .infra/docker-helper.js reset",
-    "infra:clean": "node .infra/docker-helper.js clean",
-    "infra:psql": "node .infra/docker-helper.js psql",
     "infra:status": "node .infra/docker-helper.js status",
-    "infra:backup": "node .infra/docker-helper.js backup",
+    "infra:psql": "node .infra/docker-helper.js psql",
     "infra:db:init": "node .infra/db-helper.js setup",
-    "infra:db:fresh": "node .infra/db-helper.js fresh"
+    "infra:db:fresh": "node .infra/db-helper.js fresh",
+    "infra:db:migrate": "node .infra/db-helper.js migrate",
+    "infra:db:seed": "node .infra/db-helper.js seed",
+    "infra:fix": "node .infra/setup-cross-platform.js --fix",
+    "infra:update": "curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart-update.js | node",
+    "dev": "npm run infra:db:init && next dev"
   }
 }
 ```
 
-### **✅ Vantagens desta Abordagem:**
+### CI/CD
 
-1. **Sem Conflitos**: Scripts da infraestrutura usam prefixo `infra:*`
-2. **Preserva Scripts Existentes**: Mantém todos os scripts do Prisma e projeto
-3. **Integração Simples**: Apenas adiciona `npm run infra:db:init` no script `dev`
-4. **Flexibilidade**: Pode usar tanto scripts da infra quanto scripts nativos do Prisma
-
-### **📝 Como Integrar em Projeto Existente:**
-
-1. **Adicione os scripts da infraestrutura** ao seu `package.json` existente
-2. **Modifique apenas o script `dev`** para incluir `npm run infra:db:init &&`
-3. **Mantenha todos os outros scripts** como estão
-4. **Execute uma vez**: `npm run infra:setup` para configurar
-
-### **🎯 Scripts de Uso Diário:**
-
-```bash
-# Primeira vez (setup da infraestrutura)
-npm run infra:setup
-
-# Desenvolvimento diário
-npm run dev  # Já inclui infra:db:init
-
-# Se quiser usar só a infraestrutura
-npm run infra:up
-
-# Se quiser usar scripts Prisma nativos
-npm run prisma:studio
-npm run prisma:migrate
+```json
+{
+  "scripts": {
+    "infra:setup:ci": "node .infra/setup-cross-platform.js --force --auto",
+    "test:integration": "npm run infra:setup:ci && npm run test",
+    "build:ci": "npm run infra:setup:ci && npm run build"
+  }
+}
 ```
 
-## 🌍 **VANTAGENS dos Scripts Cross-Platform**
+## 💡 Dicas e Boas Práticas
 
-### ✅ **Funcionam em Qualquer Plataforma**
+### Para desenvolvimento diário
 
-- 🪟 **Windows** (PowerShell, CMD, Git Bash)
-- 🍎 **macOS** (Terminal, iTerm)
-- 🐧 **Linux** (bash, zsh, fish)
+1. **Configure uma vez**: Use `npm run infra:setup`
+2. **Use automático**: Modifique script `dev` para incluir `infra:db:init`
+3. **Mantenha simples**: Comandos `infra:up` e `infra:down` para controle manual
 
-### ✅ **Detecção Automática**
+### Para equipes
 
-- Detecta automaticamente a plataforma
-- Usa o melhor método para cada SO
-- Fallbacks inteligentes para máxima compatibilidade
+1. **Documente no README**: Inclua comandos de setup
+2. **Use auto-setup**: Facilita onboarding de novos desenvolvedores
+3. **Configure CI**: Use `infra:setup:ci` em pipelines
 
-### ✅ **Sem Dependências Externas**
+### Para troubleshooting
 
-- Não precisa de `wget`, `curl`, `bash` específicos
-- Usa apenas Node.js (que já está instalado)
-- Funciona em qualquer ambiente de desenvolvimento
+1. **Use diagnóstico**: `npm run infra:debug` mostra tudo
+2. **Use fix**: `npm run infra:fix` resolve problemas comuns
+3. **Use verbose**: Adicione `--verbose` para ver detalhes
 
-### ✅ **Tratamento de Erros Robusto**
+### Para múltiplos projetos
 
-- Mensagens claras em português
-- Verificações de pré-requisitos
-- Logs coloridos e informativos
+1. **Deixe automático**: Sistema detecta portas automaticamente
+2. **Use force quando necessário**: `infra:setup:force` para reconfigurar
+3. **Monitore recursos**: `docker system df` para ver uso de espaço
 
-### ✅ **Organização de Arquivos**
+---
 
-- Helpers ficam na pasta `.infra/` (ignorada pelo Git)
-- Infraestrutura fica na pasta `infra-db/` (ignorada pelo Git)
-- Projeto principal permanece limpo
-- Fácil remoção: apenas delete as pastas `.infra/` e `infra-db/`
-
-````
-
-## 🎯 Scripts por Caso de Uso
-
-### **Setup Inicial (Primeira vez)**
-
-```bash
-npm run infra:setup      # Automático via curl
-npm run dev              # Inicia desenvolvimento
-````
+**💡 Lembre-se**: Todos os comandos `infra:*` são opcionais e não interferem com comandos existentes. Você pode usar em paralelo com comandos nativos do Prisma, Docker, etc.\*\*
 
 ### **Desenvolvimento Diário**
 

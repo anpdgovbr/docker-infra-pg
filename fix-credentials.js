@@ -72,10 +72,14 @@ function updateEnvFileIfExampleExists({ dbName, dbUser, dbPassword, dbPort }) {
   const exampleContent = fs.readFileSync(envExamplePath, 'utf8')
   const example = parseEnvContentToMap(exampleContent)
 
-  const hasKey = k => Object.prototype.hasOwnProperty.call(example, k)
+  // Preferir Object.hasOwn quando disponível, com fallback para compatibilidade
+  const hasKey =
+    typeof Object.hasOwn === 'function'
+      ? k => Object.hasOwn(example, k)
+      : k => Object.prototype.hasOwnProperty.call(example, k)
   const getOr = (k, v) => {
     const cur = existing[k]
-    const empty = !cur || cur.replace(/^\"|\"$/g, '').trim() === ''
+    const empty = !cur || cur.replace(/(^"|"$)/g, '').trim() === ''
     return empty ? v : cur
   }
 
@@ -85,14 +89,16 @@ function updateEnvFileIfExampleExists({ dbName, dbUser, dbPassword, dbPort }) {
     const re = /^KEYCLOAK_ADMIN_PASSWORD=.*$/m
     envContent = re.test(envContent)
       ? envContent.replace(re, `KEYCLOAK_ADMIN_PASSWORD=${val}`)
-      : envContent + `${envContent && !envContent.endsWith('\n') ? '\n' : ''}KEYCLOAK_ADMIN_PASSWORD=${val}\n`
+      : envContent +
+        `${envContent && !envContent.endsWith('\n') ? '\n' : ''}KEYCLOAK_ADMIN_PASSWORD=${val}\n`
   }
   if (hasKey('KEYCLOAK_DB_PASSWORD')) {
     const val = getOr('KEYCLOAK_DB_PASSWORD', generateSecurePassword())
     const re = /^KEYCLOAK_DB_PASSWORD=.*$/m
     envContent = re.test(envContent)
       ? envContent.replace(re, `KEYCLOAK_DB_PASSWORD=${val}`)
-      : envContent + `${envContent && !envContent.endsWith('\n') ? '\n' : ''}KEYCLOAK_DB_PASSWORD=${val}\n`
+      : envContent +
+        `${envContent && !envContent.endsWith('\n') ? '\n' : ''}KEYCLOAK_DB_PASSWORD=${val}\n`
   }
 
   // Stacks comuns (apenas se declarado no .env.example)

@@ -210,25 +210,36 @@ const commands = {
 
 // Função principal
 function main() {
-  const command = process.argv[2]
+  const argv = process.argv.slice(2)
+  const command = argv[0]
 
-  if (!command || !commands[command]) {
+  const printHelp = () => {
     log('🗄️  Database Helper - Cross Platform', 'green')
     log('', 'reset')
     log('Comandos disponíveis:', 'blue')
-    log('  setup    - Configurar banco (up + migrate + seed)', 'reset')
-    log('  fresh    - Reset completo (reset infra + setup)', 'reset')
-    log('  migrate  - Executar migrações Prisma', 'reset')
-    log('  seed     - Executar seed', 'reset')
-    log('  studio   - Abrir Prisma Studio', 'reset')
-    log('  reset    - Reset migrações Prisma', 'reset')
-    log('  generate - Gerar cliente Prisma', 'reset')
+    log('  setup     - Configurar banco (up + migrate + seed)', 'reset')
+    log('  fresh     - Reset completo (reset infra + setup)', 'reset')
+    log('  migrate   - Executar migrações Prisma', 'reset')
+    log('  seed      - Executar seed', 'reset')
+    log('  studio    - Abrir Prisma Studio', 'reset')
+    log('  reset     - Reset migrações Prisma', 'reset')
+    log('  generate  - Gerar cliente Prisma', 'reset')
     log('', 'reset')
-    log('Uso: node db-helper.js <comando>', 'yellow')
+    log('Docs: https://github.com/anpdgovbr/docker-infra-pg', 'yellow')
+    log('Uso: node db-helper.js <comando> [--help]', 'yellow')
+  }
+
+  if (!command || command === 'help' || argv.includes('--help') || argv.includes('-h')) {
+    printHelp()
+    process.exit(command ? 0 : 1)
+  }
+
+  if (!commands[command]) {
+    log(`❌ Comando desconhecido: ${command}`, 'red')
+    printHelp()
     process.exit(1)
   }
 
-  // Executa o comando
   try {
     commands[command]()
   } catch (error) {

@@ -1,38 +1,99 @@
-# 📚 Índice de documentação — docker-infra-pg
+# 📚 Documentação - Docker PostgreSQL Infrastructure ANPD
 
-Este índice lista os guias e referências disponíveis no diretório `docs/`.
+> **Infraestrutura PostgreSQL moderna, automatizada e multiplataforma para projetos da ANPD**
 
-Guia principal
+## 🚀 Como Navegar Nesta Documentação
 
-- `guia-completo.md` — Guia passo a passo com exemplos de uso e fluxos (setup, deploy local, múltiplos projetos).
+### 🟢 **Iniciante** - Primeiros Passos
 
-Comandos e templates
+**Comece aqui se é sua primeira vez com a infraestrutura**
 
-- `comandos.md` — Templates de scripts `package.json` por cenário (dev, CI, Next.js, Prisma).
+- [`inicio-rapido.md`](inicio-rapido.md) - **Setup em 5 minutos** com exemplos práticos
+- [`instalacao-projetos.md`](instalacao-projetos.md) - **Integrar em projetos existentes** sem quebrar nada
 
-Port management
+### 🟡 **Intermediário** - Uso Cotidiano
 
-- `port-management.md` — Explica a detecção inteligente de portas e como o `port-manager` funciona.
+**Para quem já usa e quer dominar as funcionalidades**
 
-Cross-platform
+- [`comandos.md`](comandos.md) - **Referência completa** de todos os comandos disponíveis
+- [`gerenciamento-portas.md`](gerenciamento-portas.md) - **Como funciona** a detecção inteligente de portas
+- [`compatibilidade.md`](compatibilidade.md) - **Windows, macOS, Linux** e projetos ES Modules
 
-- `cross-platform.md` — Instruções específicas para Windows, macOS e Linux e notas sobre usar `.cjs` em projetos ESM.
+### 🔴 **Avançado** - Domínio Completo
 
-CI/CD
+**Para casos complexos, CI/CD e troubleshooting**
 
-- `ci-cd.md` — Exemplos de workflows (GitHub Actions, GitLab CI, Jenkins) e notas sobre secrets em pipelines.
+- [`guia-completo.md`](guia-completo.md) - **Guia técnico aprofundado** com todos os recursos
+- [`ci-cd.md`](ci-cd.md) - **Pipelines** e automação (GitHub Actions, GitLab CI, Jenkins)
+- [`solucao-problemas.md`](solucao-problemas.md) - **Troubleshooting** para resolver qualquer problema
 
-Troubleshooting
+## 🎯 Acesso Rápido por Necessidade
 
-- `troubleshooting.md` — Problemas comuns e soluções rápidas (porta em uso, autenticação, scripts faltando).
+### 💡 "Quero começar agora"
 
-Outros
+→ [`inicio-rapido.md`](inicio-rapido.md)
 
-- `REPLICAR-EM-PROJETOS.md` — Passo a passo para replicar a infra em outros projetos.
+### 🔧 "Tenho um projeto e quero adicionar a infra"
 
-Suporte
+→ [`instalacao-projetos.md`](instalacao-projetos.md)
 
-- Issues: https://github.com/anpdgovbr/docker-infra-pg/issues
-- Discussions: https://github.com/anpdgovbr/docker-infra-pg/discussions
+### ❓ "Esqueci como usar um comando"
 
-Se algum arquivo listado não existir no repositório, abra um issue para que o adicionemos.
+→ [`comandos.md`](comandos.md)
+
+### 🐛 "Algo não está funcionando"
+
+→ [`solucao-problemas.md`](solucao-problemas.md)
+
+### 🚀 "Quero configurar no CI/CD"
+
+→ [`ci-cd.md`](ci-cd.md)
+
+### 🔌 "Múltiplos projetos na mesma VM"
+
+→ [`gerenciamento-portas.md`](gerenciamento-portas.md)
+
+### 🌍 "Problemas no Windows/macOS"
+
+→ [`compatibilidade.md`](compatibilidade.md)
+
+## ⭐ Recursos Destacados
+
+### 🤖 **Setup Automático**
+
+```bash
+# Um comando configura tudo
+curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node
+```
+
+### 🔌 **Múltiplos Projetos**
+
+```bash
+Projeto A: localhost:5432 ✅
+Projeto B: localhost:5433 ✅ (auto-detectado)
+Projeto C: localhost:5434 ✅ (auto-detectado)
+```
+
+### 🌍 **100% Cross-Platform**
+
+- Windows (PowerShell, CMD, Git Bash)
+- macOS (Terminal, iTerm2)
+- Linux (bash, zsh, fish)
+- CI/CD (GitHub Actions, GitLab CI)
+
+## 💡 Dicas de Leitura
+
+- **Resumos executivos**: Cada guia começa com um resumo do que você vai aprender
+- **Exemplos práticos**: Todos os comandos têm exemplos reais de uso
+- **Links cruzados**: Seções conectadas para aprofundamento natural
+- **Nível de complexidade**: 🟢 Básico | 🟡 Intermediário | 🔴 Avançado
+
+## 🆘 Precisa de Ajuda?
+
+- 🐛 **Bug ou problema**: [GitHub Issues](https://github.com/anpdgovbr/docker-infra-pg/issues)
+- 💬 **Dúvidas gerais**: [GitHub Discussions](https://github.com/anpdgovbr/docker-infra-pg/discussions)
+- 📖 **Documentação**: Você está aqui! Use a navegação acima
+
+---
+
+**Comece por [`inicio-rapido.md`](inicio-rapido.md) e em 5 minutos você terá a infraestrutura funcionando!** 🚀

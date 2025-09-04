@@ -54,34 +54,34 @@ function writePackageJson(pkg) {
 
 // Configura .gitignore
 function setupGitignore() {
-  const gitignoreContent = `
-# Infraestrutura PostgreSQL ANPD
-.infra/
-infra-db/
+  const requiredLines = [
+    '# Infraestrutura PostgreSQL ANPD',
+    '.infra/',
+    'infra-db/',
+    '',
+    '# Scripts temporários da infraestrutura (caso fiquem na raiz)',
+    'setup-infra.sh',
+    'setup-infra-temp.sh'
+  ]
 
-# Scripts temporários da infraestrutura (caso fiquem na raiz)
-setup-infra.sh
-setup-infra-temp.sh
-`
-
-  let currentGitignore = ''
+  let lines = []
   if (fs.existsSync('.gitignore')) {
-    currentGitignore = fs.readFileSync('.gitignore', 'utf8')
+    const content = fs.readFileSync('.gitignore', 'utf8')
+    lines = content.split(/\r?\n/)
   }
 
-  // Verifica se já está configurado
-  if (
-    currentGitignore.includes('.infra/') ||
-    currentGitignore.includes('infra-db/') ||
-    currentGitignore.includes('setup-infra.sh')
-  ) {
-    log('✅ .gitignore já configurado', 'green')
-    return
+  const set = new Set(lines.filter(l => l !== undefined))
+  let added = 0
+  for (const l of requiredLines) {
+    if (!set.has(l)) {
+      set.add(l)
+      lines.push(l)
+      added++
+    }
   }
 
-  // Adiciona as configurações
-  fs.writeFileSync('.gitignore', currentGitignore + gitignoreContent)
-  log('✅ .gitignore configurado', 'green')
+  fs.writeFileSync('.gitignore', lines.join('\n').replace(/\n+$/, '') + '\n')
+  log(added > 0 ? '✅ .gitignore atualizado' : '✅ .gitignore já estava configurado', 'green')
 }
 
 // Remove arquivos temporários da raiz do projeto
@@ -166,6 +166,18 @@ function addInfraScripts(pkg) {
 
 // Função principal
 function main() {
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    log('🤖 Auto-Setup Infra PostgreSQL ANPD', 'green')
+    log('', 'reset')
+    log('Uso:', 'blue')
+    log(
+      '  curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/auto-setup.js | node',
+      'reset'
+    )
+    log('', 'reset')
+    log('Docs: https://github.com/anpdgovbr/docker-infra-pg', 'yellow')
+    process.exit(0)
+  }
   try {
     log('🚀 Configurando Infraestrutura PostgreSQL ANPD', 'green')
 

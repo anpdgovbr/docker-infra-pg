@@ -13,6 +13,13 @@ const fs = require('fs')
 const isWindows = os.platform() === 'win32'
 const deleteCommand = isWindows ? 'del' : 'rm'
 
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  console.log('🚀 Quick Setup Cross-Platform')
+  console.log('Uso: node quick-setup.js')
+  console.log('Docs: https://github.com/anpdgovbr/docker-infra-pg')
+  process.exit(0)
+}
+
 console.log(`🚀 Quick Setup Cross-Platform`)
 console.log(`📊 SO detectado: ${os.platform()} ${os.arch()}`)
 

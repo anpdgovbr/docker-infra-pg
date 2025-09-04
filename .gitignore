@@ -58,6 +58,9 @@ temp-setup.js
 # Docker / compose local overrides
 docker-compose.override.yml
 
+# Ignorar infra-db local gerada para testes
+infra-db/
+
 # Ignore infra local database data (se criado como arquivo)
 infra-db/*.local
 
