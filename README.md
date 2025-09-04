@@ -163,7 +163,7 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/quick
 npm run infra:setup         # Setup inicial (detecta porta automaticamente)
 npm run infra:setup:manual  # Modo manual para escolher porta/credenciais
 npm run infra:setup:force   # Forçar regeneração (nova porta se necessário)
-npm run infra:up            # Subir infraestrutura (docker-compose up)
+npm run infra:up            # Subir infraestrutura (docker-compose up) + pós-up opcional
 npm run infra:down          # Parar infraestrutura
 npm run infra:status        # Ver status
 npm run infra:logs          # Ver logs
@@ -178,6 +178,39 @@ curl -sSL https://raw.githubusercontent.com/anpdgovbr/docker-infra-pg/main/smart
 ```
 
 ---
+
+## Pós-up Hook Opcional (Genérico)
+
+Após `infra:up`, os helpers podem disparar automaticamente um comando pós-subida, ideal para subir serviços que dependem do banco (por exemplo, Keycloak), mantendo o comportamento opcional e seguro.
+
+- Auto: se houver `docker-compose.yml` na raiz do projeto, executa `docker compose up -d` após a infra subir.
+- Manual: pergunta antes de executar (útil em ambientes interativos).
+- Customizado: defina um comando alternativo via variável de ambiente.
+
+Variáveis de ambiente e flags:
+
+- `INFRA_POST_UP_DISABLE=1` — desabilita completamente o hook pós-up.
+- `INFRA_UP_MODE=manual` — ativa modo interativo (pergunta antes de executar).
+- `INFRA_UP_MODE=auto` — ativa modo automático (padrão).
+- `INFRA_POST_UP_CMD="docker compose -f compose.override.yml up -d"` — comando pós-up customizado.
+- Flag `--manual` — equivalente a `INFRA_UP_MODE=manual` (ex.: `node .infra/docker-helper.js up --manual`).
+
+Exemplos:
+
+```bash
+# Padrão (auto): sobe infra e, se tiver compose na raiz, sobe serviços
+npm run infra:up
+
+# Manual: pergunta antes de rodar o compose da raiz
+INFRA_UP_MODE=manual npm run infra:up
+
+# Desabilitar completamente o pós-up
+INFRA_POST_UP_DISABLE=1 npm run infra:up
+
+# Comando pós-up customizado
+INFRA_POST_UP_CMD="docker compose -f compose.override.yml up -d" npm run infra:up
+```
+
 
 ## Segurança — mascaramento de secrets
 

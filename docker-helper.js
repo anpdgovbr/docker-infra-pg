@@ -5,7 +5,7 @@
  * Funciona em Windows, macOS e Linux
  */
 
-const { execSync } = require('child_process')
+const { execSync, spawnSync } = require('child_process')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -48,6 +48,93 @@ function runCommand(command, options = {}) {
   }
 }
 
+// Utilidades para compose e pós-up
+function detectRootCompose(cwd) {
+  const files = ['docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml']
+  return files.find((f) => fs.existsSync(path.join(cwd, f))) || null
+}
+
+function detectComposeBin() {
+  // Prefira `docker compose` (plugin), senão `docker-compose`
+  const hasDocker = spawnSync(isWindows ? 'where' : 'which', ['docker'], { stdio: 'ignore', shell: false })
+  if (hasDocker.status === 0) {
+    return { bin: 'docker', args: ['compose'] }
+  }
+  const hasDockerCompose = spawnSync(isWindows ? 'where' : 'which', ['docker-compose'], { stdio: 'ignore', shell: false })
+  if (hasDockerCompose.status === 0) {
+    return { bin: 'docker-compose', args: [] }
+  }
+  return null
+}
+
+function promptYesNo(question) {
+  // Entrada não interativa => assume "não"
+  if (!process.stdin.isTTY) return false
+  process.stdout.write(question)
+  const buf = Buffer.alloc(1024)
+  try {
+    const bytes = fs.readSync(0, buf, 0, 1024, null)
+    const ans = buf.slice(0, bytes).toString('utf8').trim()
+    return /^(y|yes)$/i.test(ans)
+  } catch (e) {
+    return false
+  }
+}
+
+function getUpMode(argv) {
+  // Suporta env INFRA_UP_MODE=manual|auto e flag --manual
+  const fromEnv = (process.env.INFRA_UP_MODE || '').toLowerCase()
+  if (fromEnv === 'manual' || fromEnv === 'auto') return fromEnv
+  if (argv.includes('--manual')) return 'manual'
+  return 'auto'
+}
+
+function shouldDisableHook() {
+  return process.env.INFRA_POST_UP_DISABLE === '1' || process.env.INFRA_POST_UP_DISABLE === 'true'
+}
+
+function runPostUpIfNeeded({ cwd, argv }) {
+  if (shouldDisableHook()) {
+    log('⚙️  Hook pós-up desabilitado (INFRA_POST_UP_DISABLE=1).', 'yellow')
+    return
+  }
+
+  const composeFile = detectRootCompose(cwd)
+  const customCmd = process.env.INFRA_POST_UP_CMD && process.env.INFRA_POST_UP_CMD.trim()
+  if (!composeFile && !customCmd) {
+    log('ℹ️  Nenhum docker-compose na raiz e nenhum INFRA_POST_UP_CMD definido. Pulando pós-up.', 'blue')
+    return
+  }
+
+  const mode = getUpMode(argv)
+  if (mode === 'manual') {
+    const ok = promptYesNo(`❓ Detectado ${customCmd ? 'comando customizado' : composeFile}. Executar pós-up agora? [y/N] `)
+    if (!ok) {
+      log('↩️  Pós-up cancelado pelo usuário.', 'yellow')
+      return
+    }
+  } else {
+    log(`⚙️  Modo auto: executando pós-up ${customCmd ? '(customizado)' : `(compose: ${composeFile})`}.`, 'blue')
+  }
+
+  try {
+    if (customCmd) {
+      runCommand(customCmd, { cwd })
+    } else {
+      const compose = detectComposeBin()
+      if (!compose) {
+        log('❌ Docker/Docker Compose não encontrado. Não foi possível executar pós-up.', 'red')
+        return
+      }
+      const cmd = `${compose.bin} ${[...compose.args, 'up', '-d'].join(' ')}`
+      runCommand(cmd, { cwd })
+    }
+    log('✅ Pós-up concluído.', 'green')
+  } catch (e) {
+    log(`❌ Erro no pós-up: ${e.message}`, 'red')
+  }
+}
+
 // Verifica se o diretório infra-db existe
 function checkInfraDir() {
   const infraDir = path.join(process.cwd(), 'infra-db')
@@ -66,6 +153,8 @@ const commands = {
     log('🚀 Subindo infraestrutura PostgreSQL...', 'green')
     runCommand('docker-compose up -d', { cwd: infraDir })
     log('✅ Infraestrutura iniciada!', 'green')
+    // Pós-up opcional: disparar compose da raiz ou comando customizado
+    runPostUpIfNeeded({ cwd: process.cwd(), argv: process.argv.slice(2) })
   },
 
   down: () => {

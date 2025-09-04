@@ -65,7 +65,7 @@ npm run dev              # Inicia desenvolvimento (inclui infra:db:init)
 ### **Desenvolvimento Diário**
 
 ```bash
-npm run infra:up         # Só subir banco (se já configurado)
+npm run infra:up         # Só subir banco (se já configurado) + pós-up opcional
 npm run dev              # Desenvolvimento (já inclui banco)
 ```
 
@@ -85,6 +85,7 @@ npm run dev              # Desenvolvimento
   "scripts": {
     "infra:setup": "curl -fsSL https://raw.githubusercontent.com/seu-usuario/docker-infra-pg/main/setup-cross-platform.js | node",
     "infra:up": "node .infra/docker-helper.js up",
+    "infra:up:manual": "node .infra/docker-helper.js up --manual",
     "infra:down": "node .infra/docker-helper.js down",
     "infra:logs": "node .infra/docker-helper.js logs",
     "infra:reset": "node .infra/docker-helper.js reset",
@@ -128,6 +129,12 @@ Para desenvolvimento profissional com todas as funcionalidades:
   }
 }
 ```
+
+#### Pós-up opcional (genérico)
+
+- Auto: se houver `docker-compose.yml` na raiz, executa `docker compose up -d` após a infra subir.
+- Manual: use `infra:up:manual` ou `INFRA_UP_MODE=manual npm run infra:up`.
+- Customize com `INFRA_POST_UP_CMD` ou desabilite com `INFRA_POST_UP_DISABLE=1`.
 
 ## 🏢 Scripts para CI/CD e Produção - Cross-Platform
 
